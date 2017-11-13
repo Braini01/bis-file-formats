@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace BIS.Core.Math
 {
@@ -11,12 +12,12 @@ namespace BIS.Core.Math
         public float Z => z;
         public float W => w;
 
-        public static Quaternion ReadCompressed(byte[] data)
+        public static Quaternion ReadCompressed(BinaryReader input)
         {
-            var x = (float)(-BitConverter.ToInt16(data, 0) / 16384d);
-            var y = (float)(BitConverter.ToInt16(data, 2) / 16384d);
-            var z = (float)(-BitConverter.ToInt16(data, 4) / 16384d);
-            var w = (float)(BitConverter.ToInt16(data, 6) / 16384d);
+            var x = (float)(-input.ReadInt16() / 16384d);
+            var y = (float)(input.ReadInt16() / 16384d);
+            var z = (float)(-input.ReadInt16() / 16384d);
+            var w = (float)(input.ReadInt16() / 16384d);
 
             return new Quaternion(x, y, z, w);
         }
@@ -77,9 +78,9 @@ namespace BIS.Core.Math
         /// for unit quaternions only?
         /// </summary>
         /// <returns></returns>
-        public float[,] AsRotationMatrix()
+        public Matrix3P AsRotationMatrix()
         {
-            var rotMatrix = new float[3, 3];
+            var rotMatrix = new Matrix3P();
 
             double xy = x * y;
             double wz = w * z;

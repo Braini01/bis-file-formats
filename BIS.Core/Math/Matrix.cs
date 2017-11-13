@@ -106,7 +106,7 @@ namespace BIS.Core.Math
             return res;
         }
 
-        public void setTilda(Vector3P a)
+        public void SetTilda(Vector3P a)
         {
             Aside.Y = -a.Z;
             Aside.Z = a.Y;
@@ -116,7 +116,7 @@ namespace BIS.Core.Math
             Dir.Y = a.X;
         }
 
-        public void write(BinaryWriterEx output)
+        public void Write(BinaryWriterEx output)
         {
             Aside.Write(output);
             Up.Write(output);
@@ -142,25 +142,22 @@ $@"{this[0,0]}, {this[0, 1]}, {this[0, 2]},
 
     public class Matrix4P
     {
-        private Matrix3P orientation;
-        private Vector3P position;
-
-        public Matrix3P Orientation {  get { return orientation; } }
-        public Vector3P Position { get { return position; } }
+        public Matrix3P Orientation { get; }
+        public Vector3P Position { get; }
 
         public float this[int row, int col]
         {
             get
             {
-                return (col == 3) ? position[row] : orientation[col][row];
+                return (col == 3) ? Position[row] : Orientation[col][row];
             }
 
             set
             {
                 if (col == 3)
-                    position[row] = value;
+                    Position[row] = value;
                 else
-                    orientation[col][row] = value;
+                    Orientation[col][row] = value;
             }
         }
 
@@ -171,8 +168,8 @@ $@"{this[0,0]}, {this[0, 1]}, {this[0, 2]},
 
         private Matrix4P(Matrix3P orientation, Vector3P position)
         {
-            this.orientation = orientation;
-            this.position = position;
+            Orientation = orientation;
+            Position = position;
         }
 
         public static Matrix4P operator *(Matrix4P a, Matrix4P b)
@@ -211,10 +208,20 @@ $@"{this[0,0]}, {this[0, 1]}, {this[0, 2]},
             return res;
         }
 
-        public void write(BinaryWriterEx output)
+        public static Matrix4P ReadMatrix4Quat16b(BinaryReaderEx input)
         {
-            orientation.write(output);
-            position.Write(output);
+            var quat = Quaternion.ReadCompressed(input);
+            var x = new ShortFloat(input.ReadUInt16());
+            var y = new ShortFloat(input.ReadUInt16());
+            var z = new ShortFloat(input.ReadUInt16());
+
+            return new Matrix4P(quat.AsRotationMatrix(), new Vector3P(x, y, z));
+        }
+
+        public void Write(BinaryWriterEx output)
+        {
+            Orientation.Write(output);
+            Position.Write(output);
         }
 
         public override string ToString()
