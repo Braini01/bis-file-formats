@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BIS.ALB", "BIS.ALB\BIS.ALB.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BIS.PBO", "BIS.PBO\BIS.PBO.csproj", "{DEFC7EF4-36B3-4A35-85F4-6F41462609EE}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BIS.RTM", "BIS.RTM\BIS.RTM.csproj", "{87936689-8B3D-426E-A6A5-F4AA6DF5CEAB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{DEFC7EF4-36B3-4A35-85F4-6F41462609EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DEFC7EF4-36B3-4A35-85F4-6F41462609EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DEFC7EF4-36B3-4A35-85F4-6F41462609EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{87936689-8B3D-426E-A6A5-F4AA6DF5CEAB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{87936689-8B3D-426E-A6A5-F4AA6DF5CEAB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{87936689-8B3D-426E-A6A5-F4AA6DF5CEAB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{87936689-8B3D-426E-A6A5-F4AA6DF5CEAB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
