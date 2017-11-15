@@ -87,10 +87,9 @@ namespace BIS.Core.Streams
             return stream.ReadArrayBase(readElement, nElements);
         }
 
-        public T[] ReadCompressedArray<T>(Func<BinaryReaderEx, T> readElement) => ReadCompressedArray(readElement, Marshal.SizeOf(typeof(T)));
-        public short[] ReadCompressedShortArray() => ReadCompressedArray(i => i.ReadInt16());
-        public int[] ReadCompressedIntArray() => ReadCompressedArray(i => i.ReadInt32());        
-        public float[] ReadCompressedFloatArray() => ReadCompressedArray(i => i.ReadSingle());
+        public short[] ReadCompressedShortArray() => ReadCompressedArray(i => i.ReadInt16(), 2);
+        public int[] ReadCompressedIntArray() => ReadCompressedArray(i => i.ReadInt32(), 4);        
+        public float[] ReadCompressedFloatArray() => ReadCompressedArray(i => i.ReadSingle(), 4);
 
         #endregion
 
