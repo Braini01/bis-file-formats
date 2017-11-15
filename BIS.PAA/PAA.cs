@@ -31,13 +31,16 @@ namespace BIS.PAA
         public PAAType Type { get; private set; } = PAAType.UNDEFINED;
         public Palette Palette { get; private set; }
 
+        public int Width => mipmaps[0].Width;
+        public int Height => mipmaps[0].Height;
+
 
         public PAA(string file) : this(File.OpenRead(file), !file.EndsWith(".pac")) { }
-        public PAA(Stream stream, bool isPaa = true) : this(new BinaryReaderEx(stream), isPaa) { }
+        public PAA(Stream stream, bool isPac = false) : this(new BinaryReaderEx(stream), isPac) { }
 
-        public PAA(BinaryReaderEx stream, bool isPaa = true)
+        public PAA(BinaryReaderEx stream, bool isPac = false)
         {
-            Read(stream, isPaa);
+            Read(stream, isPac);
         }
 
         public Mipmap this[int i] => mipmaps[i];
@@ -59,13 +62,13 @@ namespace BIS.PAA
             return PAAType.UNDEFINED;
         }
 
-        private void Read(BinaryReaderEx input, bool isPAA = true)
+        private void Read(BinaryReaderEx input, bool isPac = false)
         {
             var magic = input.ReadUInt16();
             var type = MagicNumberToType(magic);
             if (type == PAAType.UNDEFINED)
             {
-                type = (isPAA) ? PAAType.RGBA_4444 : PAAType.P8;
+                type = (!isPac) ? PAAType.RGBA_4444 : PAAType.P8;
                 input.Position -= 2;
             }
             Type = type;
@@ -87,22 +90,30 @@ namespace BIS.PAA
                 throw new FormatException("Expected two more zero's at end of file.");
         }
 
-        public byte[] GetARGB32PixelData(BinaryReaderEx input, int mipmapIndex=0)
+        public static byte[] GetARGB32PixelData(Stream paaStream, bool isPac = false, int mipmapIndex = 0)
         {
-            Mipmap mipmap = mipmaps[mipmapIndex];
-            var rawData = mipmap.GetRawPixelData(input, Type);
+            var paa = new PAA(paaStream, isPac);
+            return GetARGB32PixelData(paa, paaStream, mipmapIndex);
+        }
 
-            switch (Type)
+        public static byte[] GetARGB32PixelData(PAA paa, Stream paaStream, int mipmapIndex = 0)
+        {
+            var input = new BinaryReaderEx(paaStream);
+
+            Mipmap mipmap = paa[mipmapIndex];
+            var rawData = mipmap.GetRawPixelData(input, paa.Type);
+
+            switch (paa.Type)
             {
                 case PAAType.RGBA_8888:
                 case PAAType.P8:
-                    return PixelFormatConversion.P8ToARGB32(rawData, Palette);
+                    return PixelFormatConversion.P8ToARGB32(rawData, paa.Palette);
                 case PAAType.DXT1:
                 case PAAType.DXT2:
                 case PAAType.DXT3:
                 case PAAType.DXT4:
                 case PAAType.DXT5:
-                    return PixelFormatConversion.DXTToARGB32(rawData, mipmap.Width, mipmap.Height, (int)Type);
+                    return PixelFormatConversion.DXTToARGB32(rawData, mipmap.Width, mipmap.Height, (int)paa.Type);
                 case PAAType.RGBA_4444:
                     return PixelFormatConversion.ARGB16ToARGB32(rawData);
                 case PAAType.RGBA_5551:
@@ -110,7 +121,7 @@ namespace BIS.PAA
                 case PAAType.AI88:
                     return PixelFormatConversion.AI88ToARGB32(rawData);
                 default:
-                    throw new Exception($"Cannot retrieve pixel data from this PaaType: {Type}");
+                    throw new Exception($"Cannot retrieve pixel data from this PaaType: {paa.Type}");
             }
         }
     }
