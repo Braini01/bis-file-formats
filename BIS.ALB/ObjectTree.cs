@@ -20,11 +20,11 @@ namespace BIS.ALB
 
         public ObjectTreeLeaf[] Objects;
 
-        public ObjectTreeNode(BinaryReaderEx input)
+        public ObjectTreeNode(BinaryReaderEx input, int layerVersion)
         {
             NodeType = input.ReadSByte();
 
-            Area = new MapArea(input);
+            Area = new MapArea(input, layerVersion >= 4);
 
             Level = input.ReadInt32();
             Color = Enumerable.Range(0, 4).Select(_ => input.ReadByte()).ToArray();
@@ -36,7 +36,7 @@ namespace BIS.ALB
                 var isChild = flags;
                 for (int i = 0; i < 4; i++)
                 {
-                    if ((isChild & 1) == 1) Objects[i] = new ObjectTreeLeaf(input);
+                    if ((isChild & 1) == 1) Objects[i] = new ObjectTreeLeaf(input, layerVersion);
                     isChild >>= 1;
                 }
             }
@@ -46,7 +46,7 @@ namespace BIS.ALB
                 var isChild = flags;
                 for (int i = 0; i < 4; i++)
                 {
-                    if ((isChild & 1) == 1) Childs[i] = new ObjectTreeNode(input);
+                    if ((isChild & 1) == 1) Childs[i] = new ObjectTreeNode(input, layerVersion);
                     isChild >>= 1;
                 }
             }
@@ -64,9 +64,9 @@ namespace BIS.ALB
         public int[] ObjectTypeHashes { get; }
         public ObjectInfo[][] ObjectInfos { get; }
 
-        public ObjectTreeLeaf(BinaryReaderEx input)
+        public ObjectTreeLeaf(BinaryReaderEx input, int layerVersion)
         {
-            Area = new MapArea(input);
+            Area = new MapArea(input, layerVersion >= 4);
             Color = input.ReadBytes(4);
             HashValue = input.ReadInt32();
             ObjectTypeCount = input.ReadInt32();

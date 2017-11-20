@@ -13,6 +13,7 @@ namespace BIS.ALB
         Integer=5,
         Integer2=6,
         Integer3=7,
+        Integer4=8,
         Boolean=9,
         Float=10,
         String=11,
@@ -36,18 +37,18 @@ namespace BIS.ALB
             public int TagID { get; }
             public ALB_Value Value { get; }
 
-            public ALB_Entry(BinaryReaderEx input)
+            public ALB_Entry(BinaryReaderEx input, int? layerVersion = null)
             {
                 TagID = input.ReadInt16();
                 var datatype = (ALB_Datatype)input.ReadByte();
-                Value = ALB_Value.ReadALBValue(datatype, input);
+                Value = ALB_Value.ReadALBValue(datatype, input, layerVersion);
             }
         }
 
         #region ValueTypes
         public abstract class ALB_Value
         {
-            public static ALB_Value ReadALBValue(ALB_Datatype dataType, BinaryReaderEx input)
+            public static ALB_Value ReadALBValue(ALB_Datatype dataType, BinaryReaderEx input, int? layerVersion = null)
             {
                 switch (dataType)
                 {
@@ -61,17 +62,19 @@ namespace BIS.ALB
                         return new ALB_DoubleArray(input);
                     case ALB_Datatype.Integer:
                         return new ALB_SimpleValue<int>(input.ReadInt32());
-                    case ALB_Datatype.Integer2:
+                    case ALB_Datatype.Integer2: //mnPriority
                         return new ALB_SimpleValue<int>(input.ReadInt32());
-                    case ALB_Datatype.Integer3:
+                    case ALB_Datatype.Integer3: //objectCount, Hash (uint?)
+                        return new ALB_SimpleValue<int>(input.ReadInt32());
+                    case ALB_Datatype.Integer4:
                         return new ALB_SimpleValue<int>(input.ReadInt32());
                     case ALB_Datatype.List:
-                        return new ALB_List(input);
+                        return new ALB_List(input, layerVersion);
                     case ALB_Datatype.Object:
                         return new ALB_Object(input);
                     case ALB_Datatype.String:
                         return new ALB_SimpleValue<string>(input.ReadAscii());
-                    case ALB_Datatype.Unknown:
+                    case ALB_Datatype.Unknown: //KeyValue?
                         return new ALB_Unknown(input);
                     case ALB_Datatype.Unknown2:
                         return new ALB_Unknown2(input);
@@ -88,16 +91,16 @@ namespace BIS.ALB
 
         public class ALB_SimpleValue<T> : ALB_Value
         {
-            T value;
+            public T Value { get; }
             public ALB_SimpleValue(T value)
             {
-                this.value = value;
+                this.Value = value;
             }
 
             public override string ToString(ALB1 alb, int indLvl = 0)
             {
-                if (value is string) return $"\"{value}\"";
-                return value.ToString();
+                if (Value is string) return $"\"{Value}\"";
+                return Value.ToString();
             }
         }
 
@@ -107,14 +110,16 @@ namespace BIS.ALB
             ALB_Entry[] entries;
             public ObjectTreeNode treeRoot;
 
-            public ALB_List(BinaryReaderEx input)
+            public ALB_List(BinaryReaderEx input, int? layerVersion = null)
             {
                 size = input.ReadInt32();
                 var nEntries = input.ReadInt32();
 
-                if (size - 4 == nEntries)
+                if (nEntries > 0 && (size - 4 == nEntries))
                 {
-                    treeRoot = new ObjectTreeNode(input);
+                    if (!layerVersion.HasValue)
+                        throw new FormatException("No layerVersion specified before reading ObjectTree");
+                    treeRoot = new ObjectTreeNode(input, layerVersion.Value);
                 }
                 else
                 {
@@ -242,9 +247,13 @@ namespace BIS.ALB
             //unknown data
             input.ReadBytes(6);
 
+            int? layerVersion = null;
             while(input.Position < input.BaseStream.Length)
             {
-                var e = new ALB_Entry(input);
+                var e = new ALB_Entry(input, layerVersion);
+                if (tags[e.TagID].Equals("mlayerversion", StringComparison.OrdinalIgnoreCase))
+                    layerVersion = (e.Value as ALB_SimpleValue<int>).Value;
+
                 entries.AddLast(e);
             }
         }
