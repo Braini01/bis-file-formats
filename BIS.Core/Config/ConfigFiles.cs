@@ -10,7 +10,7 @@ namespace BIS.Core.Config
         public ParamClass Root { get; private set; }
         public List<KeyValuePair<string, int>> EnumValues { get; private set; }
 
-        public ParamFile() : base()
+        public ParamFile()
         {
             EnumValues = new List<KeyValuePair<string, int>>(10);
         }

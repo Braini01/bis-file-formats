@@ -77,18 +77,19 @@ namespace BIS.Core.Config
             Entries = new List<ParamEntry>(20);
         }
 
-        public ParamClass(string name, IEnumerable<ParamEntry> entries)
+        public ParamClass(string name, string baseclass, IEnumerable<ParamEntry> entries)
         {
-            BaseClassName = "";
+            BaseClassName = baseclass;
             Name = name;
             Entries = entries.ToList();
         }
 
-        public ParamClass(string name, params ParamEntry[] entries) : this(name, (IEnumerable < ParamEntry > )entries) { }
+        public ParamClass(string name, IEnumerable<ParamEntry> entries): this(name, "", entries) { }
+
+        public ParamClass(string name, params ParamEntry[] entries) : this(name, (IEnumerable<ParamEntry>)entries) { }
 
         public ParamClass(BinaryReaderEx input)
         {
-            //Type = EntryType.Class;
             Name = input.ReadAsciiz();
             var offset = input.ReadUInt32();
             var oldPos = input.Position;
@@ -200,9 +201,11 @@ $@"{classHead}
 
     public class ParamExternClass : ParamEntry
     {
-        public ParamExternClass(BinaryReaderEx input)
+        public ParamExternClass(BinaryReaderEx input) : this(input.ReadAsciiz()) { }
+
+        public ParamExternClass(string name)
         {
-            Name = input.ReadAsciiz();
+            Name = name;
         }
 
         public override string ToString(int indentionLevel = 0)
@@ -212,10 +215,13 @@ $@"{classHead}
     }
     public class ParamDeleteClass : ParamEntry
     {
-        public ParamDeleteClass(BinaryReaderEx input)
+        public ParamDeleteClass(BinaryReaderEx input) : this(input.ReadAsciiz()) { }
+
+        public ParamDeleteClass(string name)
         {
-            Name = input.ReadAsciiz();
+            Name = name;
         }
+
         public override string ToString(int indentionLevel = 0)
         {
             return $"{new string(' ', indentionLevel * 4)}delete {Name};";
