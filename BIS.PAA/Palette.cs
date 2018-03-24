@@ -15,6 +15,8 @@ namespace BIS.PAA
         //! color used to maximize dynamic range
         public PackedColor MaxColor { get; private set; }
 
+        internal ARGBSwizzle ChannelSwizzle { get; private set; } = ARGBSwizzle.Default;
+
         public bool IsAlpha { get; private set; }
         public bool IsTransparent { get; private set; }
 
@@ -71,7 +73,13 @@ namespace BIS.PAA
                         }
                         break;
                     case "ZIWS": //SWIZ
-                        input.Position += taggSize;
+                        Debug.Assert(taggSize == 4);
+                        ARGBSwizzle newSwizzle;
+                        newSwizzle.SwizA = (TexSwizzle)input.ReadByte();
+                        newSwizzle.SwizR = (TexSwizzle)input.ReadByte();
+                        newSwizzle.SwizG = (TexSwizzle)input.ReadByte();
+                        newSwizzle.SwizB = (TexSwizzle)input.ReadByte();
+                        ChannelSwizzle = newSwizzle;
                         break;
 
                     default:

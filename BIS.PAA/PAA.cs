@@ -7,18 +7,7 @@ using BIS.Core.Streams;
 
 namespace BIS.PAA
 {
-    public enum TexSwizzle
-    {
-        TSAlpha,
-        TSRed,
-        TSGreen,
-        TSBlue,
-        TSInvAlpha,
-        TSInvRed,
-        TSInvGreen,
-        TSInvBlue,
-        TSOne
-    }
+
 
     public enum PAAType
     {
@@ -88,7 +77,7 @@ namespace BIS.PAA
 
             Palette = new Palette(type);
             Palette.Read(input, mipmapOffsets);
-            
+
             mipmaps = new List<Mipmap>(16);
             int i = 0;
             while (input.ReadUInt32() != 0)
@@ -116,102 +105,30 @@ namespace BIS.PAA
             Mipmap mipmap = paa[mipmapIndex];
             var rawData = mipmap.GetRawPixelData(input, paa.Type);
 
+            byte[] argbPixels;
             switch (paa.Type)
             {
                 case PAAType.RGBA_8888:
                 case PAAType.P8:
-                    return PixelFormatConversion.P8ToARGB32(rawData, paa.Palette);
+                    return PixelFormatConversion.P8ToARGB32(rawData, paa.Palette); //never uses swizzling
                 case PAAType.DXT1:
                 case PAAType.DXT2:
                 case PAAType.DXT3:
                 case PAAType.DXT4:
                 case PAAType.DXT5:
-                    return PixelFormatConversion.DXTToARGB32(rawData, mipmap.Width, mipmap.Height, (int)paa.Type);
+                    argbPixels = PixelFormatConversion.DXTToARGB32(rawData, mipmap.Width, mipmap.Height, (int)paa.Type); break;
                 case PAAType.RGBA_4444:
-                    return PixelFormatConversion.ARGB16ToARGB32(rawData);
+                    argbPixels = PixelFormatConversion.ARGB16ToARGB32(rawData); break;
                 case PAAType.RGBA_5551:
-                    return PixelFormatConversion.ARGB1555ToARGB32(rawData);
+                    argbPixels = PixelFormatConversion.ARGB1555ToARGB32(rawData); break;
                 case PAAType.AI88:
-                    return PixelFormatConversion.AI88ToARGB32(rawData);
+                    argbPixels = PixelFormatConversion.AI88ToARGB32(rawData); break;
                 default:
                     throw new Exception($"Cannot retrieve pixel data from this PaaType: {paa.Type}");
             }
 
-
-            //only for PAA and if it is no PI8 format
-            if (_argb)
-            {
-                TexSwizzle invSwizzle[4] = { TSAlpha, TSRed, TSGreen, TSBlue };
-                InvertSwizzle(invSwizzle, swizzle, 0);
-                InvertSwizzle(invSwizzle, swizzle, 1);
-                InvertSwizzle(invSwizzle, swizzle, 2);
-                InvertSwizzle(invSwizzle, swizzle, 3);
-                ChannelSwizzle(invSwizzle);
-            }
-
+            ChannelSwizzling.Apply(argbPixels, paa.Palette.ChannelSwizzle);
+            return argbPixels;
         }
-
-        public static void InvertSwizzle(TexSwizzle[] invSwizzle, TexSwizzle[] swizzle, int ch)
-        {
-            TexSwizzle swiz = TexSwizzle.TSAlpha + ch;
-            if (swizzle[ch] >= TexSwizzle.TSInvAlpha && swizzle[ch] <= TexSwizzle.TSInvBlue)
-            {
-                invSwizzle[swizzle[ch] - TexSwizzle.TSInvAlpha] = TexSwizzle.TSInvAlpha - TexSwizzle.TSAlpha + swiz;
-            }
-            else if (swizzle[ch] <= TexSwizzle.TSBlue)
-            {
-                invSwizzle[(int)swizzle[ch]] = swiz;
-            }
-        }
-
-        public static void CheckInvSwizzle(TexSwizzle swiz, out int offset, out int mulA, out int addA)
-        {
-            if (swiz == TexSwizzle.TSOne)
-            {
-                // one - ignore input (mul by 0) and set it to one (add 255)
-                mulA = 0;
-                addA = 255;
-                offset = 0;
-                return;
-            }
-            mulA = 1;
-            addA = 0;
-            switch (swiz)
-            {
-                case TexSwizzle.TSInvAlpha: swiz = TexSwizzle.TSAlpha; mulA = -1; addA = 255; break;
-                case TexSwizzle.TSInvRed: swiz = TexSwizzle.TSRed; mulA = -1; addA = 255; break;
-                case TexSwizzle.TSInvGreen: swiz = TexSwizzle.TSGreen; mulA = -1; addA = 255; break;
-                case TexSwizzle.TSInvBlue: swiz = TexSwizzle.TSBlue; mulA = -1; addA = 255; break;
-            }
-            offset = swiz < TexSwizzle.TSOne ? 24 - (int)swiz * 8 : 0;
-        }
-
-        public void ChannelSwizzle(TexSwizzle[] channelSwizzle, byte[] argbPixels, int w, int h)
-        {
-            if (channelSwizzle[0] == TexSwizzle.TSAlpha && channelSwizzle[1] == TexSwizzle.TSRed &&
-              channelSwizzle[2] == TexSwizzle.TSGreen && channelSwizzle[3] == TexSwizzle.TSBlue)
-            {
-                return;
-            }
-
-            int nPixel = w * h;
-            CheckInvSwizzle(channelSwizzle[0], out int aOffset, out int mulA, out int addA);
-            CheckInvSwizzle(channelSwizzle[1], out int rOffset, out int mulR, out int addR);
-            CheckInvSwizzle(channelSwizzle[2], out int gOffset, out int mulG, out int addG);
-            CheckInvSwizzle(channelSwizzle[3], out int bOffset, out int mulB, out int addB);
-  
-            while (--nPixel>=0)
-            {
-               
-                int p = argbPixels;
-                int a = (p >> aOffset) & 0xff;
-                int r = (p >> rOffset) & 0xff;
-                int g = (p >> gOffset) & 0xff;
-                int b = (p >> bOffset) & 0xff;
-                *pix++ = MakeARGB(a* mulA+addA, r* mulR+addR, g* mulG+addG, b* mulB+addB);
-            }
-        }
-
-
     }
 }
