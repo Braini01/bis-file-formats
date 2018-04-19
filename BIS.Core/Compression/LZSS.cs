@@ -4,11 +4,90 @@ namespace BIS.Core.Compression
 {
     public static class LZSS
     {
+        const int N = 4096;
+        const int F = 18;
+        const int THRESHOLD = 2;
+
+        public static byte[] ReadLZSS(ReadOnlySpan<byte> input, int expectedSize, bool useSignedChecksum, out int ip)
+        {
+            char[] text_buf = new char[N + F - 1];
+            var dst = new byte[expectedSize];
+
+            var bytesLeft = expectedSize;
+            ip = 0;
+            int iDst = 0;
+
+            int i, j, r, c, csum = 0;
+            int flags;
+            for (i = 0; i < N - F; i++) text_buf[i] = ' ';
+            r = N - F; flags = 0;
+            while (bytesLeft > 0)
+            {
+                if (((flags >>= 1) & 256) == 0)
+                {
+                    c = input[ip++];
+                    flags = c | 0xff00;
+                }
+                if ((flags & 1) != 0)
+                {
+                    c = input[ip++];
+                    if (useSignedChecksum)
+                        csum += (sbyte)c;
+                    else
+                        csum += (byte)c;
+
+                    // save byte
+                    dst[iDst++] = (byte)c;
+                    bytesLeft--;
+                    // continue decompression
+                    text_buf[r] = (char)c;
+                    r++; r &= (N - 1);
+                }
+                else
+                {
+                    i = input[ip++];
+                    j = input[ip++];
+                    i |= (j & 0xf0) << 4; j &= 0x0f; j += THRESHOLD;
+
+                    int ii = r - i;
+                    int jj = j + ii;
+
+                    if (j + 1 > bytesLeft)
+                    {
+                        throw new ArgumentException("LZSS overflow");
+                    }
+
+                    for (; ii <= jj; ii++)
+                    {
+                        c = (byte)text_buf[ii & (N - 1)];
+                        if (useSignedChecksum)
+                            csum += (sbyte)c;
+                        else
+                            csum += (byte)c;
+
+                        // save byte
+                        dst[iDst++] = (byte)c;
+                        bytesLeft--;
+                        // continue decompression
+                        text_buf[r] = (char)c;
+                        r++; r &= (N - 1);
+                    }
+                }
+            }
+
+            int csr = BitConverter.ToInt32(input.ToArray(), ip);
+            ip += 4;
+
+            if (csr != csum)
+            {
+                throw new ArgumentException("Checksum mismatch");
+            }
+
+            return dst;
+        }
+
         public static uint ReadLZSS(System.IO.Stream input, out byte[] dst, uint expectedSize, bool useSignedChecksum)
         {
-            const int N = 4096;
-            const int F = 18;
-            const int THRESHOLD = 2;
             char[] text_buf = new char[N+F-1];
             dst = new byte[expectedSize];
 

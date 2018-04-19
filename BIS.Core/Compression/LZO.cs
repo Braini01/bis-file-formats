@@ -7,81 +7,79 @@ namespace BIS.Core.Compression
     {
         private static readonly uint M2_MAX_OFFSET = 0x0800;
 
-        public unsafe static uint Decompress(byte* input, byte* output, uint expectedSize)
+        public static byte[] Decompress(ReadOnlySpan<byte> input, int expectedSize, out int ip)
         {
-            byte* op;
-            byte* ip;
-            uint t;
-            byte* m_pos;
+            var output = new byte[expectedSize];
 
-            byte* op_end = output + expectedSize;
-            op = output;
-            ip = input;
+            int op = 0;
+            ip = 0;
+            int t;
+            int m_pos;
 
-            if (*ip > 17)
+            if (input[ip] > 17)
             {
                 #region B_1
-                t = *ip++ - 17U;
+                t = input[ip++] - 17;
                 if (t < 4) goto match_next;
                 #endregion
                 #region B_2
                 Debug.Assert(t > 0);// returns LZO_E_ERROR;
-                if ((op_end - op) < (t)) throw new OverflowException("Outpur Overrun");
-                do *op++ = *ip++; while (--t > 0);
+                if ((expectedSize - op) < (t)) throw new OverflowException("Output Overrun");
+                do output[op++] = input[ip++]; while (--t > 0);
                 goto first_literal_run;
                 #endregion
             }
 
             B_3:
                 #region B_3
-                t = *ip++;
+                t = input[ip++];
                 if (t >= 16) goto match;
                 #endregion
                 #region B_4
                 if (t == 0)
                 {
-                    while (*ip == 0)
+                    while (input[ip] == 0)
                     {
                         t += 255;
                         ip++;
                     }
-                    t += 15U + *ip++;
+                    t += 15 + input[ip++];
                 }
                 Debug.Assert(t > 0);
-                if ((op_end - op) < (t + 3)) throw new OverflowException("Output Overrun");
+                if ((expectedSize - op) < (t + 3)) throw new OverflowException("Output Overrun");
 
-                *(uint*)(op) = *(uint*)(ip);
+                input.Slice(ip, 4).CopyTo(output.AsSpan(op, 4));
                 op += 4; ip += 4;
                 if (--t > 0)
                 {
-                    if (t >= 4)
+                if (t >= 4)
+                {
+                    do
                     {
-                        do
-                        {
-                            *(uint*)(op) = *(uint*)(ip);
-                            op += 4; ip += 4; t -= 4;
-                        } while (t >= 4);
-                        if (t > 0) do *op++ = *ip++; while (--t > 0);
+                        input.Slice(ip, 4).CopyTo(output.AsSpan(op, 4));
+                        op += 4; ip += 4; t -= 4;
+                    } while (t >= 4);
+                    if (t > 0) do output[op++] = input[ip++]; while (--t > 0);
                     }
                     else
-                        do *op++ = *ip++; while (--t > 0);
+                        do output[op++] = input[ip++]; while (--t > 0);
                 }
                 #endregion
 
                 #region f_l_r
             first_literal_run:
-                t = *ip++;
+                t = input[ip++];
                 if (t >= 16) goto match;
                 #endregion
 
                 #region B_5
-                m_pos = op - (1 + M2_MAX_OFFSET);
+                m_pos = (int)(op - (1 + M2_MAX_OFFSET));
                 m_pos -= t >> 2;
-                m_pos -= *ip++ << 2;
+                m_pos -= input[ip++] << 2;
 
-                if (m_pos < output || m_pos >= op) throw new OverflowException("Lookbehind Overrun");
-                if ((op_end - op) < (3)) throw new OverflowException("Output Overrun");
-                *op++ = *m_pos++; *op++ = *m_pos++; *op++ = *m_pos;
+                if (m_pos < 0 || m_pos >= op) throw new OverflowException("Lookbehind Overrun");
+                if ((expectedSize - op) < (3)) throw new OverflowException("Output Overrun");
+                output[op++] = output[m_pos++]; output[op++] = output[m_pos++]; output[op++] = output[m_pos];
 
                 goto match_done;
                 #endregion
@@ -92,11 +90,11 @@ namespace BIS.Core.Compression
                 #region m_1
                 m_pos = op - 1;
                 m_pos -= (t >> 2) & 7;
-                m_pos -= *ip++ << 3;
+                m_pos -= input[ip++] << 3;
                 t = (t >> 5) - 1;
-                if (m_pos < output || m_pos >= op) throw new OverflowException("Lookbehind Overrun");
+                if (m_pos < 0 || m_pos >= op) throw new OverflowException("Lookbehind Overrun");
                 Debug.Assert(t > 0);
-                if ((op_end - op) < (t + 2)) throw new OverflowException("Output Overrun");
+                if ((expectedSize - op) < (t + 2)) throw new OverflowException("Output Overrun");
                 goto copy_match;
                 #endregion
             }
@@ -106,16 +104,16 @@ namespace BIS.Core.Compression
                 t &= 31;
                 if (t == 0)
                 {
-                    while (*ip == 0)
+                    while (input[ip] == 0)
                     {
                         t += 255;
                         ip++;
                     }
-                    t += 31U + *ip++;
+                    t += 31 + input[ip++];
                 }
 
                 m_pos = op - 1;
-                m_pos -= (ip[0] >> 2) + (ip[1] << 6);
+                m_pos -= (input[ip] >> 2) + (input[ip+1] << 6);
 
                 ip += 2;
                 #endregion
@@ -129,26 +127,26 @@ namespace BIS.Core.Compression
                 t &= 7;
                 if (t == 0)
                 {
-                    while (*ip == 0)
+                    while (input[ip] == 0)
                     {
                         t += 255;
                         ip++;
                     }
-                    t += 7U + *ip++;
+                    t += 7 + input[ip++];
                 }
 
-                m_pos -= (ip[0] >> 2) + (ip[1] << 6);
-
+                m_pos -= (input[ip] >> 2) + (input[ip+1] << 6);
                 ip += 2;
 
                 if (m_pos == op)
                 {
                     #region done1
-                    int val = (int)(op - output);
+                    //int val = (int)(op - output);
                     Debug.Assert(t == 1);
-                    if (m_pos != op_end)
+                    if (m_pos != expectedSize)
                         throw new OverflowException("Output Underrun");
-                    return (uint)(ip - input);
+
+                    return output;
                     #endregion
                 }
                 #endregion
@@ -161,54 +159,55 @@ namespace BIS.Core.Compression
                 #region m_4
                 m_pos = op - 1;
                 m_pos -= t >> 2;
-                m_pos -= *ip++ << 2;
+                m_pos -= input[ip++] << 2;
 
-                if (m_pos < output || m_pos >= op) throw new OverflowException("Lookbehind Overrun");
-                if ((op_end - op) < (2)) throw new OverflowException("Output Overrun");
-                *op++ = *m_pos++; *op++ = *m_pos;
+                if (m_pos < 0 || m_pos >= op) throw new OverflowException("Lookbehind Overrun");
+                if ((expectedSize - op) < (2)) throw new OverflowException("Output Overrun");
+                output[op++] = output[m_pos++]; output[op++] = output[m_pos];
                 goto match_done;
                 #endregion
             }
 
             #region B_6
-            if (m_pos < output || m_pos >= op) throw new OverflowException("Lookbehind Overrun");
+            if (m_pos < 0 || m_pos >= op) throw new OverflowException("Lookbehind Overrun");
             Debug.Assert(t > 0);
-            if ((op_end - op) < (t + 2)) throw new OverflowException("Output Overrun");
+            if ((expectedSize - op) < (t + 2)) throw new OverflowException("Output Overrun");
             #endregion
 
             if (t >= 2 * 4 - (3 - 1) && (op - m_pos) >= 4)
             {
                 #region B_7
-                *(uint*)(op) = *(uint*)(m_pos);
+                output.AsSpan(m_pos, 4).CopyTo(output.AsSpan(op, 4));
                 op += 4; m_pos += 4; t -= 4 - (3 - 1);
                 do
                 {
-                    *(uint*)(op) = *(uint*)(m_pos);
+                    output.AsSpan(m_pos, 4).CopyTo(output.AsSpan(op, 4));
                     op += 4; m_pos += 4; t -= 4;
                 } while (t >= 4);
-                if (t > 0) do *op++ = *m_pos++; while (--t > 0);
+                if (t > 0) do output[op++] = output[m_pos++]; while (--t > 0);
                 goto match_done;
                 #endregion
             }
 
         copy_match:
-            *op++ = *m_pos++; *op++ = *m_pos++;
-            do *op++ = *m_pos++; while (--t > 0);
+            output[op++] = output[m_pos++]; output[op++] = output[m_pos++];
+            do output[op++] = output[m_pos++]; while (--t > 0);
 
         match_done:
-            t = ip[-2] & 3U;
+            t = input[ip-2] & 3;
             if (t == 0) goto B_3;
 
         match_next:
             Debug.Assert(t > 0 && t < 4);
-            if ((op_end - op) < (t)) throw new OverflowException("Output Overrun");
+            if ((expectedSize - op) < (t)) throw new OverflowException("Output Overrun");
 
-            *op++ = *ip++;
-            if (t > 1) { *op++ = *ip++; if (t > 2) { *op++ = *ip++; } }
+            output[op++] = input[ip++];
+            if (t > 1) { output[op++] = input[ip++]; if (t > 2) { output[op++] = input[ip++]; } }
 
-            t = *ip++;
+            t = input[ip++];
             goto match;
         }
+
 
         private static byte ip(System.IO.Stream i)
         {

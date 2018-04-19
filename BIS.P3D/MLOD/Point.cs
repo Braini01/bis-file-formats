@@ -39,23 +39,26 @@ namespace BIS.P3D.MLOD
         ALL_FLAGS = LAND_MASK | DECAL_MASK | LIGHT_MASK | FOG_MASK | USER_MASK | SPECIAL_MASK
     }
 
-    public class Point : Vector3P
+    public class Point
     {
+        public Vector3P Position;
         public PointFlags PointFlags { get; private set; }
 
-        public Point(Vector3P pos, PointFlags flags) : base(pos.X, pos.Y, pos.Z)
+        public Point(Vector3P pos, PointFlags flags)
         {
+            Position = pos;
             PointFlags = flags;
         }
 
-        public Point(BinaryReaderEx input) : base(input)
+        public Point(BinaryReaderEx input)
         {
+            Position = new Vector3P(input);
             PointFlags = (PointFlags)input.ReadInt32();
         }
 
         public new void Write(BinaryWriterEx output)
         {
-            base.Write(output);
+            Position.Write(output);
             output.Write((int)PointFlags);
         }
     }
