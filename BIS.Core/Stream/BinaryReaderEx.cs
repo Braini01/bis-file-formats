@@ -90,6 +90,7 @@ namespace BIS.Core.Streams
         public short[] ReadCompressedShortArray() => ReadCompressedArray(i => i.ReadInt16(), 2);
         public int[] ReadCompressedIntArray() => ReadCompressedArray(i => i.ReadInt32(), 4);        
         public float[] ReadCompressedFloatArray() => ReadCompressedArray(i => i.ReadSingle(), 4);
+        public byte[] ReadCompressedByteArray() => ReadCompressedArray(i => i.ReadByte(), 1);
 
         #endregion
 
@@ -132,21 +133,21 @@ namespace BIS.Core.Streams
             return val;
         }
 
-        public byte[] ReadCompressed(uint expectedSize)
+        public byte[] ReadCompressed(uint expectedSize, bool forceCompressed = false)
         {
             if (expectedSize == 0)
             {
                 return new byte[0];
             }
 
-            if (UseLZOCompression) return ReadLZO(expectedSize);
+            if (UseLZOCompression) return ReadLZO(expectedSize, forceCompressed);
 
             return ReadLZSS(expectedSize);
         }
 
-        public byte[] ReadLZO(uint expectedSize)
+        public byte[] ReadLZO(uint expectedSize, bool forceCompressed = false)
         {
-            bool isCompressed = (expectedSize >= 1024);
+            bool isCompressed = (expectedSize >= 1024) || forceCompressed;
             if (UseCompressionFlag)
             {
                 isCompressed = ReadBoolean();
