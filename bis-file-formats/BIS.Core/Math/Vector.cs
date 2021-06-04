@@ -1,30 +1,30 @@
 ﻿using System;
 using System.Globalization;
-
+using System.Numerics;
 using BIS.Core.Streams;
 
 namespace BIS.Core.Math
 {
     public class Vector3P
     {
-        private float[] xyz;
+        private Vector3 xyz;
 
         public float X
         {
-            get { return xyz[0]; }
-            set { xyz[0] = value; }
+            get { return xyz.X; }
+            set { xyz.X = value; }
         }
 
         public float Y
         {
-            get { return xyz[1]; }
-            set { xyz[1] = value; }
+            get { return xyz.Y; }
+            set { xyz.Y = value; }
         }
 
         public float Z
         {
-            get { return xyz[2]; }
-            set { xyz[2] = value; }
+            get { return xyz.Z; }
+            set { xyz.Z = value; }
         }
 
         public Vector3P() : this(0f) { }
@@ -49,27 +49,48 @@ namespace BIS.Core.Math
 
         public Vector3P(float x, float y, float z)
         {
-            xyz = new float[] { x, y, z };
+            xyz = new Vector3( x, y, z );
         }
 
-        public double Length => System.Math.Sqrt(X * X + Y * Y + Z * Z);
+        public Vector3P(Vector3 xyz)
+        {
+            this.xyz = xyz;
+        }
+
+        public float Length => xyz.Length();
+
+        public Vector3 Vector3 => xyz;
 
         public float this[int i]
         {
             get
             {
-                return xyz[i];
+                switch(i)
+                {
+                    case 0: return X;
+                    case 1: return Y;
+                    case 2: return Z;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(i));
+                }
             }
 
             set
             {
-                xyz[i] = value;
+                switch (i)
+                {
+                    case 0: X = value; break;
+                    case 1: Y = value; break;
+                    case 2: Z = value; break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(i));
+                }
             }
         }
 
         public static Vector3P operator -(Vector3P a)
         {
-            return new Vector3P(-a.X, -a.Y, -a.Z);
+            return new Vector3P(-a.xyz);
         }
 
         public void Write(BinaryWriterEx output)
@@ -82,23 +103,23 @@ namespace BIS.Core.Math
         //Scalarmultiplication
         public static Vector3P operator *(Vector3P a, float b)
         {
-            return new Vector3P(a.X * b, a.Y * b, a.Z * b);
+            return new Vector3P(a.xyz * b);
         }
 
         //Scalarproduct
         public static float operator *(Vector3P a, Vector3P b)
         {
-            return a.X * b.X + a.Y * b.Y + a.Z * b.Z;
+            return Vector3.Dot(a.xyz, b.xyz);
         }
 
         public static Vector3P operator +(Vector3P a, Vector3P b)
         {
-            return new Vector3P(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
+            return new Vector3P(a.xyz + b.xyz);
         }
 
         public static Vector3P operator -(Vector3P a, Vector3P b)
         {
-            return new Vector3P(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
+            return new Vector3P(a.xyz - b.xyz);
         }
 
         public override bool Equals(object obj)
@@ -115,7 +136,7 @@ namespace BIS.Core.Math
         //ToDo:
         public override int GetHashCode()
         {
-            return base.GetHashCode();
+            return xyz.GetHashCode();
         }
 
         public bool Equals(Vector3P other)
@@ -127,31 +148,23 @@ namespace BIS.Core.Math
 
         public override string ToString()
         {
-            CultureInfo cultureInfo = new CultureInfo("en-GB");
-            return "{" + X.ToString(cultureInfo.NumberFormat) + "," + Y.ToString(cultureInfo.NumberFormat) + "," + Z.ToString(cultureInfo.NumberFormat) + "}";
+            return "{" + X.ToString(CultureInfo.InvariantCulture) + "," + Y.ToString(CultureInfo.InvariantCulture) + "," + Z.ToString(CultureInfo.InvariantCulture) + "}";
         }
 
         public float Distance(Vector3P v)
         {
-            var d = this - v;
-            return (float)System.Math.Sqrt( d.X * d.X + d.Y * d.Y + d.Z * d.Z );
+            return Vector3.Distance(xyz, v.xyz);
         }
 
         public void Normalize()
         {
-            float l = (float)Length;
-            X /= l;
-            Y /= l;
-            Z /= l;
+            xyz = Vector3.Normalize(xyz);
         }
+
 
         public static Vector3P CrossProduct(Vector3P a, Vector3P b)
         {
-            var x = a.Y * b.Z - a.Z * b.Y;
-            var y = a.Z * b.X - a.X * b.Z;
-            var z = a.X * b.Y - a.Y * b.X;
-
-            return new Vector3P(x, y, z);
+            return new Vector3P(Vector3.Cross(a.xyz, b.xyz));
         }
     }
 

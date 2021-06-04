@@ -5,12 +5,12 @@ namespace BIS.Core.Math
 {
     public class Quaternion
     {
-        private float x, y, z, w;
+        private System.Numerics.Quaternion quaternion;
 
-        public float X => x;
-        public float Y => y;
-        public float Z => z;
-        public float W => w;
+        public float X => quaternion.X;
+        public float Y => quaternion.Y;
+        public float Z => quaternion.Z;
+        public float W => quaternion.W;
 
         public static Quaternion ReadCompressed(BinaryReader input)
         {
@@ -22,29 +22,25 @@ namespace BIS.Core.Math
             return new Quaternion(x, y, z, w);
         }
 
-        public Quaternion()
+        public Quaternion() 
+            : this(System.Numerics.Quaternion.Identity)
         {
-            w = 1f;
-            x = 0f;
-            y = 0f;
-            z = 0f;
         }
 
         public Quaternion(float x, float y, float z, float w)
+            : this(new System.Numerics.Quaternion(x, y, z, w))
         {
-            this.w = w;
-            this.x = x;
-            this.y = y;
-            this.z = z;
+
+        }
+
+        public Quaternion(System.Numerics.Quaternion quaternion)
+        {
+            this.quaternion = quaternion;
         }
 
         public static Quaternion operator *(Quaternion a, Quaternion b)
         {
-            var w = (a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z);
-            var x = (a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y);
-            var y = (a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x);
-            var z = (a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w);
-            return new Quaternion(x, y, z, w);
+            return new Quaternion(a.quaternion * b.quaternion);
         }
 
         public Quaternion Inverse
@@ -56,22 +52,16 @@ namespace BIS.Core.Math
             }
         }
 
-        public Quaternion Conjugate => new Quaternion(-x, -y, -z, w);
+        public Quaternion Conjugate => new Quaternion(System.Numerics.Quaternion.Conjugate(quaternion));
 
         public void Normalize()
         {
-            float n = (float)(1 / System.Math.Sqrt(x * x + y * y + z * z + w * w));
-            x *= n;
-            y *= n;
-            z *= n;
-            w *= n;
+            quaternion = System.Numerics.Quaternion.Normalize(quaternion);
         }
 
         public Vector3P Transform(Vector3P xyz)
         {
-            var vQ = new Quaternion(xyz.X, xyz.Y, xyz.Z, 0);
-            var vQnew = this * vQ * Inverse;
-            return new Vector3P(vQnew.x, vQnew.y, vQnew.z);
+            return new Vector3P(System.Numerics.Vector3.Transform(xyz.Vector3, quaternion));
         }
 
         /// <summary>
@@ -80,17 +70,19 @@ namespace BIS.Core.Math
         /// <returns></returns>
         public Matrix3P AsRotationMatrix()
         {
+            // var matrix = System.Numerics.Matrix4x4.CreateFromQuaternion(quaternion);
+
             var rotMatrix = new Matrix3P();
 
-            double xy = x * y;
-            double wz = w * z;
-            double wx = w * x;
-            double wy = w * y;
-            double xz = x * z;
-            double yz = y * z;
-            double zz = z * z;
-            double yy = y * y;
-            double xx = x * x;
+            double xy = X * Y;
+            double wz = W * Z;
+            double wx = W * X;
+            double wy = W * Y;
+            double xz = X * Z;
+            double yz = Y * Z;
+            double zz = Z * Z;
+            double yy = Y * Y;
+            double xx = X * X;
             rotMatrix[0, 0] = (float)(1 - 2 * (yy + zz));	//1-2y2-2z2// need .997
             rotMatrix[0, 1] = (float)(2 * (xy - wz));			//2xy-2wz     -0.033  
             rotMatrix[0, 2] = (float)(2 * (xz + wy));   ////  2xz+2wy//0.063
