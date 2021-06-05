@@ -23,7 +23,7 @@ namespace BIS.WRP
         public QuadTree<GeographyInfo> Geography { get; private set; }
         public QuadTree<byte> SoundMap { get; private set; }
         public Vector3P[] Mountains { get; private set; } //map peaks
-        public QuadTree<short> Materials { get; private set; }
+        public QuadTree<ushort> Materials { get; private set; }
         public byte[] Random { get; private set; } //short values
         public byte[] GrassApprox { get; private set; }
         public byte[] PrimTexIndex { get; private set; } //coord to primary texture mapping
@@ -39,6 +39,7 @@ namespace BIS.WRP
         public Object[] Objects { get; private set; }
         public byte[] MapInfos { get; private set; }
 
+        IReadOnlyList<ushort> IWrp.MaterialIndex => Materials;
         public OPRW()
         {
 
@@ -115,7 +116,7 @@ namespace BIS.WRP
 
             Mountains = input.ReadArray(inp => new Vector3P(inp));
 
-            Materials = new QuadTree<short>(LandRangeX, LandRangeY, input, (src, off) => BitConverter.ToInt16(src, off), 2);
+            Materials = new QuadTree<ushort>(LandRangeX, LandRangeY, input, (src, off) => BitConverter.ToUInt16(src, off), 2);
 
             if (Version < 21)
                 Random = input.ReadCompressed((uint)(LandRangeX * LandRangeY * 2)); //short values
@@ -191,7 +192,7 @@ namespace BIS.WRP
                     ObjectID = o.ObjectID,
                     Transform = o.Transform
                 }).Concat(new[] { EditableWrpObject.Dummy }).ToList(),
-                MaterialIndex = Materials.Select(s => (ushort)s).ToArray()
+                MaterialIndex = Materials.ToArray()
             };
         }
     }

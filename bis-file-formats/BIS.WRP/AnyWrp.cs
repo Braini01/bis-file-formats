@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using BIS.Core.Streams;
 
 namespace BIS.WRP
@@ -25,6 +26,8 @@ namespace BIS.WRP
         public float[] Elevation => wrp.Elevation;
 
         public string[] MatNames => wrp.MatNames;
+
+        public IReadOnlyList<ushort> MaterialIndex => wrp.MaterialIndex;
 
         public void Read(BinaryReaderEx input)
         {

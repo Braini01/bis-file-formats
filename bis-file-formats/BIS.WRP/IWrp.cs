@@ -1,4 +1,6 @@
-﻿namespace BIS.WRP
+﻿using System.Collections.Generic;
+
+namespace BIS.WRP
 {
     internal interface IWrp
     {
@@ -9,5 +11,6 @@
         float CellSize { get; }
         float[] Elevation { get; }
         string[] MatNames { get; }
+        IReadOnlyList<ushort> MaterialIndex { get; }
     }
 }

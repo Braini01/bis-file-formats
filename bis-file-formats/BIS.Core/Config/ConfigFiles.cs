@@ -1,11 +1,12 @@
 ﻿using BIS.Core.Streams;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace BIS.Core.Config
 {
-    public class ParamFile
+    public class ParamFile : IReadObject
     {
         public ParamClass Root { get; private set; }
         public List<KeyValuePair<string, int>> EnumValues { get; private set; }
@@ -17,8 +18,11 @@ namespace BIS.Core.Config
 
         public ParamFile(System.IO.Stream stream)
         {
-            var input = new BinaryReaderEx(stream);
+            Read(new BinaryReaderEx(stream));
+        }
 
+        public void Read(BinaryReaderEx input)
+        {
             var sig = new char[] { '\0', 'r', 'a', 'P' };
             if (!input.ReadBytes(4).SequenceEqual(sig.Select(c => (byte)c)))
                 throw new ArgumentException();
@@ -30,7 +34,7 @@ namespace BIS.Core.Config
             Root = new ParamClass(input, "rootClass");
 
             input.Position = offsetToEnums;
-            var nEnumValues = input.ReadInt32(); 
+            var nEnumValues = input.ReadInt32();
             EnumValues = Enumerable.Range(0, nEnumValues).Select(_ => new KeyValuePair<string, int>(input.ReadAsciiz(), input.ReadInt32())).ToList();
         }
 

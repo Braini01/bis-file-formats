@@ -9,7 +9,7 @@ namespace BIS.WRP
 {
     public class EditableWrpObject
     {
-        internal static EditableWrpObject Dummy = new EditableWrpObject()
+        public static EditableWrpObject Dummy = new EditableWrpObject()
         {
             Model = "",
             ObjectID = int.MaxValue, 

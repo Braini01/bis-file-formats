@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using BIS.Core.Streams;
 
@@ -99,5 +100,9 @@ namespace BIS.WRP
         public ushort[] MaterialIndex { get; set; }
         public string[] MatNames { get; set; }
         public List<EditableWrpObject> Objects { get; set; } = new List<EditableWrpObject>();
+
+        IReadOnlyList<ushort> IWrp.MaterialIndex => MaterialIndex;
+
+        public IEnumerable<EditableWrpObject> GetNonDummyObjects() => Objects.TakeWhile(o => !string.IsNullOrEmpty(o.Model));
     }
 }
