@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+    <Authors>GrueArbre</Authors>
+    <Version>0.1.0</Version>
+    <Description>Utility to manipulate WRP files.
+
+Remarks: If your are not the author of the source files, you have to ensure that files licence allows you to create a derivate work.
+You must contact author if your are not sure about this.
+Allowed by APL-SA, APL, CC BY-NC-SA.
+Forbidden by APL-ND, Bohemia Interactive EULA.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommandLineParser" Version="2.8.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\bis-file-formats\bis-file-formats.csproj" />
+  </ItemGroup>
+
+</Project>
