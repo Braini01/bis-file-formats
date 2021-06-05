@@ -16,33 +16,33 @@ namespace WrpUtil
         [Verb("convert", HelpText = "Convert to editable WRP.")]
         class ConvertOptions
         {
-            [Value(0, MetaName = "source", HelpText = "Source file.")]
+            [Value(0, MetaName = "source", HelpText = "Source file.", Required = true)]
             public string Source { get; set; }
 
-            [Value(1, MetaName = "target", HelpText = "Target file.")]
+            [Value(1, MetaName = "target", HelpText = "Target file.", Required = true)]
             public string Target { get; set; }
         }
 
         [Verb("merge", HelpText = "Merge data from two editable WRP.")]
         class MergeOptions
         {
-            [Value(0, MetaName = "master", HelpText = "Master source file, its terrain definition is kept.")]
+            [Value(0, MetaName = "master", HelpText = "Master source file, its terrain definition is kept.", Required = true)]
             public string Master { get; set; }
 
-            [Value(1, MetaName = "objects", HelpText = "Objects source file, its objects are kept.")]
+            [Value(1, MetaName = "objects", HelpText = "Objects source file, its objects are kept.", Required = true)]
             public string ToMerge { get; set; }
 
-            [Value(2, MetaName = "target", HelpText = "Target file.")]
+            [Value(2, MetaName = "target", HelpText = "Target file.", Required = true)]
             public string Target { get; set; }
         }
 
         [Verb("strip", HelpText = "Strip objects from a WRP, keep only terrain.")]
         class StripOptions
         {
-            [Value(0, MetaName = "source", HelpText = "Source file.")]
+            [Value(0, MetaName = "source", HelpText = "Source file.", Required = true)]
             public string Source { get; set; }
 
-            [Value(1, MetaName = "target", HelpText = "Target file.")]
+            [Value(1, MetaName = "target", HelpText = "Target file.", Required = true)]
             public string Target { get; set; }
         }
 
@@ -82,7 +82,7 @@ namespace WrpUtil
 
             Console.WriteLine("Merge");
             var objects = master.GetNonDummyObjects().ToList();
-            var idShift = objects.Max(o => o.ObjectID) + 1;
+            var idShift = objects.Count > 0 ? objects.Max(o => o.ObjectID) + 1 : 0;
             objects.AddRange(tomerge.Select(o => new EditableWrpObject() { Model = o.Model, ObjectID = o.ObjectID + idShift, Transform = o.Transform }));
             objects.Add(EditableWrpObject.Dummy);
             master.Objects = objects;
