@@ -5,6 +5,8 @@ using System.Diagnostics;
 using BIS.Core;
 using BIS.Core.Math;
 using BIS.Core.Streams;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace BIS.WRP
 {
@@ -34,6 +36,7 @@ namespace BIS.WRP
         public int MaxObjectId { get; private set; }
         public RoadLink[][] Roadnet { get; private set; }
         public Object[] Objects { get; private set; }
+        public byte[] MapInfos { get; private set; }
 
         public OPRW(Stream s)
         {
@@ -138,10 +141,12 @@ namespace BIS.WRP
             var roadnetSize = input.ReadInt32();
 
             Roadnet = new RoadLink[LandRangeX * LandRangeY][];
+            var pos = input.Position;
             for (int i = 0; i < LandRangeX * LandRangeY; i++)
             {
                 Roadnet[i] = input.ReadArray( inp => new RoadLink(inp) );
             }
+            var read = input.Position - pos;
 
             var nObjects = sizeOfObjects / 60;
             Objects = new Object[nObjects];
@@ -150,6 +155,8 @@ namespace BIS.WRP
             {
                 Objects[i] = new Object(input);
             }
+
+            MapInfos = input.ReadBytes((int)(input.BaseStream.Length - input.BaseStream.Position));
         }
     }
 }

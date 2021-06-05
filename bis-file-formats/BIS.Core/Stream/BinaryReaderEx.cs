@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.IO;
-
+using System.IO.Compression;
+using System.Linq;
 using BIS.Core.Compression;
 
 namespace BIS.Core.Streams
@@ -27,9 +27,19 @@ namespace BIS.Core.Streams
             }
         }
 
-        public BinaryReaderEx(Stream stream): base(stream)
+        public bool HasReachedEnd => BaseStream.Position == BaseStream.Length;
+
+        public BinaryReaderEx(Stream stream): base(MakeBuffer(stream))
         {
             UseCompressionFlag = false;
+        }
+
+        private static MemoryStream MakeBuffer(Stream stream)
+        {
+            var ms = new MemoryStream((int)stream.Length);
+            stream.CopyTo(ms);
+            ms.Position = 0;
+            return ms;
         }
 
         public uint ReadUInt24()
@@ -161,6 +171,20 @@ namespace BIS.Core.Streams
             return LZO.ReadLZO(BaseStream, expectedSize);
         }
 
+#if DEBUG
+        private void CheckLegacy(byte[] legacy, byte[] buffer, long legacyPos)
+        {
+            if (Position != legacyPos)
+            {
+                throw new IOException("Position is not the same");
+            }
+            if (legacy.Zip(buffer, (a,b) => a != b).Any())
+            {
+                throw new IOException("Bytes mismatch");
+            }
+        }
+#endif
+
         public byte[] ReadLZSS(uint expectedSize, bool inPAA = false)
         {
             if (expectedSize < 1024 && !inPAA) //data is always compressed in PAAs
@@ -169,9 +193,37 @@ namespace BIS.Core.Streams
             }
             else
             {
-                var dst = new byte[expectedSize];
-                LZSS.ReadLZSS(BaseStream, out dst, expectedSize, inPAA); //PAAs calculate checksums with signed byte values
-                return dst;
+                var initialPos = BaseStream.Position;
+#if DEBUG
+                byte[] legacy;
+                LZSS.ReadLZSS(BaseStream, out legacy, expectedSize, inPAA);
+
+                var legacyPos = BaseStream.Position;
+
+                BaseStream.Seek(initialPos, SeekOrigin.Begin);
+#endif
+                var buffer = new byte[expectedSize];
+                using (var lzss = new LzssStream(BaseStream, CompressionMode.Decompress, true))
+                {
+                    lzss.Read(buffer, 0, (int)expectedSize);
+                }
+                Chesksum(inPAA, buffer); //PAAs calculate checksums with signed byte values
+#if DEBUG
+                CheckLegacy(legacy, buffer, legacyPos);
+#endif
+                return buffer;
+            }
+        }
+
+        private void Chesksum(bool useSignedChecksum, byte[] buffer)
+        {
+            var csum = useSignedChecksum ? buffer.Sum(e => (int)(sbyte)e) : buffer.Sum(e => (int)(byte)e);
+            var csData = new byte[4];
+            BaseStream.Read(csData, 0, 4);
+            int csr = BitConverter.ToInt32(csData, 0);
+            if (csr != csum)
+            {
+                throw new ArgumentException("Checksum mismatch");
             }
         }
 

@@ -1,9 +1,15 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
 
 namespace BIS.Core.Streams
 {
     public class BinaryWriterEx : BinaryWriter
     {
+        public bool UseCompressionFlag { get; set; }
+        public bool UseLZOCompression { get; set; }
+
         public long Position
         {
             get
@@ -30,6 +36,91 @@ namespace BIS.Core.Streams
         {
             Write(text.ToCharArray());
             Write(char.MinValue);
+        }
+
+
+        public void WriteArray<T>(T[] array, Action<BinaryWriterEx, T> write)
+        {
+            Write(array.Length);
+            foreach (var item in array)
+            {
+                write(this, item);
+            }
+        }
+
+        public void WriteCompressedFloatArray(float[] array)
+        {
+            WriteCompressedArray(array, (w, v) => w.Write(v), 4);
+        }
+
+        public void WriteCompressedArray<T>(T[] array, Action<BinaryWriterEx, T> write, int size, bool forceCompressed = false)
+        {
+            var mem = new MemoryStream();
+            using (var writer = new BinaryWriterEx(mem))
+            {
+                foreach (var item in array)
+                {
+                    write(writer, item);
+                }
+            }
+            Write(array.Length);
+            var bytes = mem.ToArray();
+            if (array.Length * size != bytes.Length)
+            {
+                throw new InvalidOperationException();
+            }
+            WriteCompressed(bytes, forceCompressed);
+        }
+
+        private void WriteCompressed(byte[] bytes, bool forceCompressed = false)
+        {
+            if (UseLZOCompression)
+            {
+                WriteLZO(bytes, forceCompressed);
+            }
+            else
+            {
+                WriteLZSS(bytes);
+            }
+        }
+
+
+        public void WriteLZO(byte[] bytes, bool forceCompressed = false)
+        {
+            if (bytes.Length < 1024 && !forceCompressed)
+            {
+                if (UseCompressionFlag)
+                {
+                    Write((byte)2);
+                }
+                Write(bytes);
+            }
+            else
+            {
+                if (UseCompressionFlag)
+                {
+                    Write((byte)2);
+                }
+                Write(MiniLZO.MiniLZO.Compress(bytes));
+            }
+        }
+
+        public void WriteLZSS(byte[] bytes, bool inPAA = false)
+        {
+            if (bytes.Length < 1024 && !inPAA) //data is always compressed in PAAs
+            {
+                Write(bytes);
+            }
+            else
+            {
+                var csum = inPAA ? bytes.Sum(e => (int)(sbyte)e) : bytes.Sum(e => (int)(byte)e);
+                using (var lzss = new LzssStream(BaseStream, System.IO.Compression.CompressionMode.Compress, true))
+                {
+                    lzss.Write(bytes, 0, bytes.Length);
+                }
+                Write(BitConverter.GetBytes(csum));
+            }
+            
         }
     }
 }
