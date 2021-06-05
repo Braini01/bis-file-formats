@@ -30,18 +30,11 @@ namespace BIS.Core.Streams
 
         public bool HasReachedEnd => BaseStream.Position == BaseStream.Length;
 
-        public BinaryReaderEx(Stream stream): base(MakeBuffer(stream))
+        public BinaryReaderEx(Stream stream): base(stream)
         {
             UseCompressionFlag = false;
         }
 
-        private static MemoryStream MakeBuffer(Stream stream)
-        {
-            var ms = new MemoryStream((int)stream.Length);
-            stream.CopyTo(ms);
-            ms.Position = 0;
-            return ms;
-        }
 
         public uint ReadUInt24()
         {
