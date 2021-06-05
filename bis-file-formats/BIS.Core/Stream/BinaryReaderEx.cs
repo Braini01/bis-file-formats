@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Text;
 using BIS.Core.Compression;
 
 namespace BIS.Core.Streams
@@ -49,10 +50,10 @@ namespace BIS.Core.Streams
 
         public string ReadAscii(int count)
         {
-            string str = "";
+            var str = new StringBuilder();
             for (int index = 0; index < count; ++index)
-                str = str + (char)ReadByte();
-            return str;
+                str.Append((char)ReadByte());
+            return str.ToString();
         }
 
         public string ReadAscii()
@@ -61,13 +62,19 @@ namespace BIS.Core.Streams
             return ReadAscii(n);
         }
 
+        public string ReadAscii32()
+        {
+            var n = ReadUInt32();
+            return ReadAscii((int)n);
+        }
+
         public string ReadAsciiz()
         {
-            string str = "";
+            var str = new StringBuilder();
             char ch;
             while ((ch = (char)ReadByte()) != 0)
-                str = str + ch;
-            return str;
+                str.Append(ch);
+            return str.ToString();
         }
 
         #region SimpleArray
@@ -91,10 +98,7 @@ namespace BIS.Core.Streams
         public T[] ReadCompressedArray<T>(Func<BinaryReaderEx, T> readElement, int elemSize)
         {
             int nElements = ReadInt32();
-            var expectedDataSize = (uint)(nElements * elemSize);
-            var stream = new BinaryReaderEx(new MemoryStream(ReadCompressed(expectedDataSize)));
-
-            return stream.ReadArrayBase(readElement, nElements);
+            return ReadCompressed<T>(readElement, nElements, elemSize);
         }
 
         public short[] ReadCompressedShortArray() => ReadCompressedArray(i => i.ReadInt16(), 2);
@@ -251,6 +255,28 @@ namespace BIS.Core.Streams
             Debug.Assert(outputI == expectedSize);
 
             return result;
+        }
+
+        public float[] ReadCompressedFloats(int nElements)
+        {
+            return ReadCompressed(r => r.ReadSingle(), nElements, 4);
+        }
+
+        public float[] ReadFloats(int nElements)
+        {
+            return ReadArrayBase(r => r.ReadSingle(), nElements);
+        }
+
+        public ushort[] ReadUshorts(int nElements)
+        {
+            return ReadArrayBase(r => r.ReadUInt16(), nElements);
+        }
+
+        public T[] ReadCompressed<T>(Func<BinaryReaderEx, T> readElement, int nElements, int elemSize)
+        {
+            var expectedDataSize = (uint)(nElements * elemSize);
+            var stream = new BinaryReaderEx(new MemoryStream(ReadCompressed(expectedDataSize)));
+            return stream.ReadArrayBase(readElement, nElements);
         }
     }
 }

@@ -2,6 +2,7 @@
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Text;
 
 namespace BIS.Core.Streams
 {
@@ -22,7 +23,7 @@ namespace BIS.Core.Streams
             }
         }
 
-        public BinaryWriterEx(Stream dstStream): base(dstStream){}
+        public BinaryWriterEx(Stream dstStream): base(dstStream, Encoding.ASCII){}
 
         public void WriteAscii(string text, uint len)
         {
@@ -30,6 +31,12 @@ namespace BIS.Core.Streams
             uint num = (uint)(len - text.Length);
             for (int index = 0; index < num; ++index)
                 Write(char.MinValue); //ToDo: check encoding, should always write one byte and never two or more
+        }
+
+        public void WriteAscii32(string text)
+        {
+            Write(text.Length);
+            Write(text.ToCharArray());
         }
 
         public void WriteAsciiz(string text)
@@ -42,6 +49,11 @@ namespace BIS.Core.Streams
         public void WriteArray<T>(T[] array, Action<BinaryWriterEx, T> write)
         {
             Write(array.Length);
+            WriteArrayBase(array, write);
+        }
+
+        private void WriteArrayBase<T>(T[] array, Action<BinaryWriterEx, T> write)
+        {
             foreach (var item in array)
             {
                 write(this, item);
@@ -121,6 +133,16 @@ namespace BIS.Core.Streams
                 Write(BitConverter.GetBytes(csum));
             }
             
+        }
+
+        public void WriteFloats(float[] elements)
+        {
+            WriteArrayBase(elements, (r, e) => r.Write(e));
+        }
+
+        public void WriteUshorts(ushort[] elements)
+        {
+            WriteArrayBase(elements, (r,e) => r.Write(e));
         }
     }
 }

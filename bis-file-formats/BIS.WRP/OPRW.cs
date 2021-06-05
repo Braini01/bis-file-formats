@@ -7,10 +7,11 @@ using BIS.Core.Math;
 using BIS.Core.Streams;
 using System.Linq;
 using System.Collections.Generic;
+using System.Numerics;
 
 namespace BIS.WRP
 {
-    public class OPRW
+    public class OPRW : IReadObject, IWrp
     {
         public int Version { get; private set; }
         public int AppID { get; private set; }
@@ -18,7 +19,7 @@ namespace BIS.WRP
         public int LandRangeY { get; private set; }
         public int TerrainRangeX { get; private set; }
         public int TerrainRangeY { get; private set; }
-        public float LandGrid { get; private set; }
+        public float CellSize { get; private set; }
         public QuadTree<GeographyInfo> Geography { get; private set; }
         public QuadTree<byte> SoundMap { get; private set; }
         public Vector3P[] Mountains { get; private set; } //map peaks
@@ -26,7 +27,7 @@ namespace BIS.WRP
         public byte[] Random { get; private set; } //short values
         public byte[] GrassApprox { get; private set; }
         public byte[] PrimTexIndex { get; private set; } //coord to primary texture mapping
-        public byte[] Elevation { get; private set; }
+        public float[] Elevation { get; private set; }
         public string[] MatNames { get; private set; }
         public string[] Models { get; private set; }
         public StaticEntityInfo[] EntityInfos { get; private set; }
@@ -37,6 +38,11 @@ namespace BIS.WRP
         public RoadLink[][] Roadnet { get; private set; }
         public Object[] Objects { get; private set; }
         public byte[] MapInfos { get; private set; }
+
+        public OPRW()
+        {
+
+        }
 
         public OPRW(Stream s)
         {
@@ -68,10 +74,19 @@ namespace BIS.WRP
         }
 
         //minimal version 10
-        private void Read(BinaryReaderEx input)
+        public void Read(BinaryReaderEx input)
         {
             var fileSig = input.ReadAscii(4);
-            if (fileSig != "OPRW") throw new FormatException("OPRW file does not start with correct file signature");
+            if (fileSig != "OPRW")
+            {
+                throw new FormatException("OPRW file does not start with correct file signature");
+            }
+
+            ReadContent(input);
+        }
+
+        internal void ReadContent(BinaryReaderEx input)
+        {
             Version = input.ReadInt32();
             input.Version = Version;
             if (Version < 10) throw new NotSupportedException("OPRW file versions below 10 are not supported");
@@ -88,7 +103,7 @@ namespace BIS.WRP
                 LandRangeY = input.ReadInt32(); //same as x?
                 TerrainRangeX = input.ReadInt32();
                 TerrainRangeY = input.ReadInt32(); //same as x?
-                LandGrid = input.ReadSingle();
+                CellSize = input.ReadSingle();
                 Debug.Assert(LandRangeX == LandRangeY && TerrainRangeX == TerrainRangeY);
             }
 
@@ -96,7 +111,7 @@ namespace BIS.WRP
             //if(version<19) transformOldWaterInformation
 
             var soundMapCoef = 1; //ToDo: this is read from config
-            SoundMap = new QuadTree<byte>(LandRangeX * soundMapCoef, LandRangeX * soundMapCoef, input, (src,off) => src[off],1); //both landRangeX are correct. no mistake
+            SoundMap = new QuadTree<byte>(LandRangeX * soundMapCoef, LandRangeX * soundMapCoef, input, (src, off) => src[off], 1); //both landRangeX are correct. no mistake
 
             Mountains = input.ReadArray(inp => new Vector3P(inp));
 
@@ -111,7 +126,7 @@ namespace BIS.WRP
             if (Version >= 22)
                 PrimTexIndex = input.ReadCompressed((uint)(TerrainRangeX * TerrainRangeY)); //signed byte values?
 
-            Elevation = input.ReadCompressed((uint)(TerrainRangeX * TerrainRangeY * 4));
+            Elevation = input.ReadCompressedFloats(TerrainRangeX * TerrainRangeY);
 
             var nMaterials = input.ReadInt32();
             MatNames = new string[nMaterials];
@@ -144,7 +159,7 @@ namespace BIS.WRP
             var pos = input.Position;
             for (int i = 0; i < LandRangeX * LandRangeY; i++)
             {
-                Roadnet[i] = input.ReadArray( inp => new RoadLink(inp) );
+                Roadnet[i] = input.ReadArray(inp => new RoadLink(inp));
             }
             var read = input.Position - pos;
 
@@ -157,6 +172,27 @@ namespace BIS.WRP
             }
 
             MapInfos = input.ReadBytes((int)(input.BaseStream.Length - input.BaseStream.Position));
+        }
+
+        public EditableWrp ToEditableWrp()
+        {
+            return new EditableWrp()
+            {
+                CellSize = CellSize,
+                Elevation = Elevation,
+                LandRangeX = LandRangeX,
+                LandRangeY = LandRangeY,
+                MatNames = MatNames,
+                TerrainRangeX = TerrainRangeX,
+                TerrainRangeY = TerrainRangeY,
+                Objects = Objects.OrderBy(o => o.ObjectID).Select(o => new EditableWrpObject()
+                {
+                    Model = Models[o.ModelIndex],
+                    ObjectID = o.ObjectID,
+                    Transform = o.Transform
+                }).Concat(new[] { EditableWrpObject.Dummy }).ToList(),
+                MaterialIndex = Materials.Select(s => (ushort)s).ToArray()
+            };
         }
     }
 }
