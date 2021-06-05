@@ -13,7 +13,11 @@ Allows you to convert a binarised file to a file that can be imported into Terra
 
 Can save your life, if your Terrain Builder projet was corrupted or lost (I hope you still have the imagery, it can't be restored).
 
+It can also import maps from older Arma versions.
+
 Like stated earlier, you must ensure that you can create a derivate work, check twice the licence !
+
+Can read any OPRW or 8WVR, can write only 8WVR. 
 
 ## wrputil merge
 
