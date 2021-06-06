@@ -18,7 +18,7 @@ Forbidden by APL-ND, Bohemia Interactive EULA.</Description>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\bis-file-formats\bis-file-formats.csproj" />
+    <ProjectReference Include="..\..\bis-file-formats\bis-file-formats.csproj" />
   </ItemGroup>
 
 </Project>
