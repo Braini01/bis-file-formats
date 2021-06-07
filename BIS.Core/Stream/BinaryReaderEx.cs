@@ -168,20 +168,6 @@ namespace BIS.Core.Streams
             return LZO.ReadLZO(BaseStream, expectedSize);
         }
 
-#if DEBUG
-        private void CheckLegacy(byte[] legacy, byte[] buffer, long legacyPos)
-        {
-            if (Position != legacyPos)
-            {
-                throw new IOException("Position is not the same");
-            }
-            if (legacy.Zip(buffer, (a,b) => a != b).Any())
-            {
-                throw new IOException("Bytes mismatch");
-            }
-        }
-#endif
-
         public byte[] ReadLZSS(uint expectedSize, bool inPAA = false)
         {
             if (expectedSize < 1024 && !inPAA) //data is always compressed in PAAs
@@ -190,39 +176,31 @@ namespace BIS.Core.Streams
             }
             else
             {
-                var initialPos = BaseStream.Position;
-#if DEBUG
-                byte[] legacy;
-                LZSS.ReadLZSS(BaseStream, out legacy, expectedSize, inPAA);
-
-                var legacyPos = BaseStream.Position;
-
-                BaseStream.Seek(initialPos, SeekOrigin.Begin);
-#endif
-                var buffer = new byte[expectedSize];
-                using (var lzss = new LzssStream(BaseStream, CompressionMode.Decompress, true))
-                {
-                    lzss.Read(buffer, 0, (int)expectedSize);
-                }
-                Chesksum(inPAA, buffer); //PAAs calculate checksums with signed byte values
-#if DEBUG
-                CheckLegacy(legacy, buffer, legacyPos);
-#endif
+                // XXX: Needs testing
+                //var buffer = new byte[expectedSize];
+                //using (var lzss = new LzssStream(BaseStream, CompressionMode.Decompress, true))
+                //{
+                //    lzss.Read(buffer, 0, (int)expectedSize);
+                //}
+                //Chesksum(inPAA, buffer); //PAAs calculate checksums with signed byte values
+                byte[] buffer;
+                LZSS.ReadLZSS(BaseStream, out buffer, expectedSize, inPAA);
                 return buffer;
             }
         }
 
-        private void Chesksum(bool useSignedChecksum, byte[] buffer)
-        {
-            var csum = useSignedChecksum ? buffer.Sum(e => (int)(sbyte)e) : buffer.Sum(e => (int)(byte)e);
-            var csData = new byte[4];
-            BaseStream.Read(csData, 0, 4);
-            int csr = BitConverter.ToInt32(csData, 0);
-            if (csr != csum)
-            {
-                throw new ArgumentException("Checksum mismatch");
-            }
-        }
+        // XXX: Needs testing
+        //private void Chesksum(bool useSignedChecksum, byte[] buffer)
+        //{
+        //    var csum = useSignedChecksum ? buffer.Sum(e => (int)(sbyte)e) : buffer.Sum(e => (int)(byte)e);
+        //    var csData = new byte[4];
+        //    BaseStream.Read(csData, 0, 4);
+        //    int csr = BitConverter.ToInt32(csData, 0);
+        //    if (csr != csum)
+        //    {
+        //        throw new ArgumentException("Checksum mismatch");
+        //    }
+        //}
 
         public byte[] ReadCompressedIndices(int bytesToRead, uint expectedSize)
         {
