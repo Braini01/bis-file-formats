@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\bis-file-formats\bis-file-formats.csproj" />
+    <ProjectReference Include="..\..\BIS.PAA\BIS.PAA.csproj" />
   </ItemGroup>
 
 </Project>
