@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.IO;
-
+using System.IO.Compression;
+using System.Linq;
+using System.Text;
 using BIS.Core.Compression;
 
 namespace BIS.Core.Streams
@@ -27,10 +28,13 @@ namespace BIS.Core.Streams
             }
         }
 
+        public bool HasReachedEnd => BaseStream.Position == BaseStream.Length;
+
         public BinaryReaderEx(Stream stream): base(stream)
         {
             UseCompressionFlag = false;
         }
+
 
         public uint ReadUInt24()
         {
@@ -39,10 +43,10 @@ namespace BIS.Core.Streams
 
         public string ReadAscii(int count)
         {
-            string str = "";
+            var str = new StringBuilder();
             for (int index = 0; index < count; ++index)
-                str = str + (char)ReadByte();
-            return str;
+                str.Append((char)ReadByte());
+            return str.ToString();
         }
 
         public string ReadAscii()
@@ -51,13 +55,19 @@ namespace BIS.Core.Streams
             return ReadAscii(n);
         }
 
+        public string ReadAscii32()
+        {
+            var n = ReadUInt32();
+            return ReadAscii((int)n);
+        }
+
         public string ReadAsciiz()
         {
-            string str = "";
+            var str = new StringBuilder();
             char ch;
             while ((ch = (char)ReadByte()) != 0)
-                str = str + ch;
-            return str;
+                str.Append(ch);
+            return str.ToString();
         }
 
         #region SimpleArray
@@ -81,15 +91,13 @@ namespace BIS.Core.Streams
         public T[] ReadCompressedArray<T>(Func<BinaryReaderEx, T> readElement, int elemSize)
         {
             int nElements = ReadInt32();
-            var expectedDataSize = (uint)(nElements * elemSize);
-            var stream = new BinaryReaderEx(new MemoryStream(ReadCompressed(expectedDataSize)));
-
-            return stream.ReadArrayBase(readElement, nElements);
+            return ReadCompressed<T>(readElement, nElements, elemSize);
         }
 
         public short[] ReadCompressedShortArray() => ReadCompressedArray(i => i.ReadInt16(), 2);
         public int[] ReadCompressedIntArray() => ReadCompressedArray(i => i.ReadInt32(), 4);        
         public float[] ReadCompressedFloatArray() => ReadCompressedArray(i => i.ReadSingle(), 4);
+        public byte[] ReadCompressedByteArray() => ReadCompressedArray(i => i.ReadByte(), 1);
 
         #endregion
 
@@ -132,21 +140,21 @@ namespace BIS.Core.Streams
             return val;
         }
 
-        public byte[] ReadCompressed(uint expectedSize)
+        public byte[] ReadCompressed(uint expectedSize, bool forceCompressed = false)
         {
             if (expectedSize == 0)
             {
                 return new byte[0];
             }
 
-            if (UseLZOCompression) return ReadLZO(expectedSize);
+            if (UseLZOCompression) return ReadLZO(expectedSize, forceCompressed);
 
             return ReadLZSS(expectedSize);
         }
 
-        public byte[] ReadLZO(uint expectedSize)
+        public byte[] ReadLZO(uint expectedSize, bool forceCompressed = false)
         {
-            bool isCompressed = (expectedSize >= 1024);
+            bool isCompressed = (expectedSize >= 1024) || forceCompressed;
             if (UseCompressionFlag)
             {
                 isCompressed = ReadBoolean();
@@ -168,11 +176,31 @@ namespace BIS.Core.Streams
             }
             else
             {
-                var dst = new byte[expectedSize];
-                LZSS.ReadLZSS(BaseStream, out dst, expectedSize, inPAA); //PAAs calculate checksums with signed byte values
-                return dst;
+                // XXX: Needs testing
+                //var buffer = new byte[expectedSize];
+                //using (var lzss = new LzssStream(BaseStream, CompressionMode.Decompress, true))
+                //{
+                //    lzss.Read(buffer, 0, (int)expectedSize);
+                //}
+                //Chesksum(inPAA, buffer); //PAAs calculate checksums with signed byte values
+                byte[] buffer;
+                LZSS.ReadLZSS(BaseStream, out buffer, expectedSize, inPAA);
+                return buffer;
             }
         }
+
+        // XXX: Needs testing
+        //private void Chesksum(bool useSignedChecksum, byte[] buffer)
+        //{
+        //    var csum = useSignedChecksum ? buffer.Sum(e => (int)(sbyte)e) : buffer.Sum(e => (int)(byte)e);
+        //    var csData = new byte[4];
+        //    BaseStream.Read(csData, 0, 4);
+        //    int csr = BitConverter.ToInt32(csData, 0);
+        //    if (csr != csum)
+        //    {
+        //        throw new ArgumentException("Checksum mismatch");
+        //    }
+        //}
 
         public byte[] ReadCompressedIndices(int bytesToRead, uint expectedSize)
         {
@@ -198,6 +226,28 @@ namespace BIS.Core.Streams
             Debug.Assert(outputI == expectedSize);
 
             return result;
+        }
+
+        public float[] ReadCompressedFloats(int nElements)
+        {
+            return ReadCompressed(r => r.ReadSingle(), nElements, 4);
+        }
+
+        public float[] ReadFloats(int nElements)
+        {
+            return ReadArrayBase(r => r.ReadSingle(), nElements);
+        }
+
+        public ushort[] ReadUshorts(int nElements)
+        {
+            return ReadArrayBase(r => r.ReadUInt16(), nElements);
+        }
+
+        public T[] ReadCompressed<T>(Func<BinaryReaderEx, T> readElement, int nElements, int elemSize)
+        {
+            var expectedDataSize = (uint)(nElements * elemSize);
+            var stream = new BinaryReaderEx(new MemoryStream(ReadCompressed(expectedDataSize)));
+            return stream.ReadArrayBase(readElement, nElements);
         }
     }
 }

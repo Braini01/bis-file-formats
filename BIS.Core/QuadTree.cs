@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace BIS.Core
 {
-    public class QuadTree<TElement> : IEnumerable<TElement>
+    public class QuadTree<TElement> : IEnumerable<TElement>, IReadOnlyList<TElement>
     {           
         /// <summary>
         /// how many elements exist in X-dimension
@@ -55,6 +55,9 @@ namespace BIS.Core
         public int SizeX => sizeX;
         public int SizeY => sizeY;
 
+        public int Count => sizeX * sizeY;
+
+        public TElement this[int index] => Get(index % SizeX, index / sizeX);
 
         public QuadTree(int sizeX, int sizeY, BinaryReader input, Func<byte[], int, TElement> readElement, int elementSize)
         {

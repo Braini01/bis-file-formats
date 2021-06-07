@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-
-using BIS.Core.Streams;
 using BIS.Core;
+using BIS.Core.Streams;
 
 namespace BIS.PBO
 {
@@ -29,7 +28,6 @@ namespace BIS.PBO
         public LinkedList<string> Properties { get; } = new LinkedList<string>();
         public int DataOffset { get; private set; }
         public string Prefix { get; private set; }
- 
         public string FileName => Path.GetFileName(PBOFilePath);
 
         static PBO()
@@ -95,6 +93,11 @@ namespace BIS.PBO
             while (pboEntry.FileName != "" || FileEntries.Count == 0);
 
             DataOffset = (int)input.Position;
+
+            if (Prefix == null)
+            {
+                Prefix = Path.GetFileNameWithoutExtension(PBOFilePath);
+            }
         }
 
         private byte[] GetFileData(FileEntry entry)

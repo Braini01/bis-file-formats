@@ -104,6 +104,15 @@ namespace BIS.Core.Config
             ReadCore(input);
         }
 
+        public ParamClass GetClass(string name)
+        {
+            return Entries.OfType<ParamClass>().FirstOrDefault(c => c.Name == name);
+        }
+        public T[] GetArray<T>(string name)
+        {
+            return Entries.OfType<ParamArray>().FirstOrDefault(c => c.Name == name)?.ToArray<T>();
+        }
+
         private void ReadCore(BinaryReaderEx input)
         {
             BaseClassName = input.ReadAsciiz();
@@ -154,6 +163,11 @@ $@"{classHead}
         }
 
         public ParamArray(string name, params RawValue[] values): this(name, (IEnumerable < RawValue >)values) { }
+
+        public T[] ToArray<T>()
+        {
+            return Array.Entries.Select(e => e.Get<T>()).ToArray();
+        }
 
         public override string ToString(int indentionLevel = 0)
         {
@@ -318,6 +332,11 @@ $@"{classHead}
                 return ((float)Value).ToString(CultureInfo.InvariantCulture);
 
             return Value.ToString();
+        }
+
+        internal T Get<T>()
+        {
+            return (T)Convert.ChangeType(Value, typeof(T));
         }
     }
     #endregion

@@ -18,7 +18,7 @@ namespace BIS.RTM
         public string[] MetaDataValues { get; private set; }
         public AnimKeyStone[] AnimKeyStones { get; private set; }
         public float[] PhaseTimes { get; private set; }
-        public Matrix4P[][] Phases { get; private set; }
+        public TransformP[][] Phases { get; private set; }
 
         private void Read(BinaryReaderEx input)
         {
@@ -45,7 +45,7 @@ namespace BIS.RTM
             }
 
             PhaseTimes = input.ReadCompressedFloatArray();
-            Phases = Enumerable.Range(0, nPhases).Select(_ => input.ReadCompressedArray(inp => Matrix4P.ReadMatrix4Quat16b(inp), 14)).ToArray();
+            Phases = Enumerable.Range(0, nPhases).Select(_ => input.ReadCompressedArray(inp => TransformP.Read(inp), 14)).ToArray();
         }
     }
 }
