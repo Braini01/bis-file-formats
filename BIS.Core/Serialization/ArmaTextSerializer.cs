@@ -3,7 +3,7 @@ using System.Collections;
 using System.Globalization;
 using System.Text;
 
-namespace BIS.TXT
+namespace BIS.Core.Serialization
 {
     /// <summary>
     /// Utilities to serialize to text representation of engine simple types

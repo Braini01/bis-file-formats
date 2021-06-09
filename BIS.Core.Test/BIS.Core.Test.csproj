@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\BIS.TXT\BIS.TXT.csproj" />
+    <ProjectReference Include="..\BIS.Core\BIS.Core.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,7 +1,8 @@
 using System;
+using BIS.Core.Serialization;
 using Xunit;
 
-namespace BIS.TXT.Test
+namespace BIS.Core.Test.Serialization
 {
     public class ArmaTextSerializerTest
     {

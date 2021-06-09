@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace BIS.TXT
+namespace BIS.Core.Serialization
 {
     /// <summary>
     /// Utilities to parse text representation of engine simple types
