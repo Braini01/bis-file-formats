@@ -17,6 +17,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BIS.RTM", "BIS.RTM\BIS.RTM.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BIS.WRP", "BIS.WRP\BIS.WRP.csproj", "{2B43DF8A-8D46-45FE-AD10-63AF88E0B570}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BIS.Core.Test", "BIS.Core.Test\BIS.Core.Test.csproj", "{6A91F1B2-5C8A-495A-824B-1BC7825B1939}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{2B43DF8A-8D46-45FE-AD10-63AF88E0B570}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2B43DF8A-8D46-45FE-AD10-63AF88E0B570}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2B43DF8A-8D46-45FE-AD10-63AF88E0B570}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6A91F1B2-5C8A-495A-824B-1BC7825B1939}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A91F1B2-5C8A-495A-824B-1BC7825B1939}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A91F1B2-5C8A-495A-824B-1BC7825B1939}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A91F1B2-5C8A-495A-824B-1BC7825B1939}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
