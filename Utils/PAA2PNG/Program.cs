@@ -22,40 +22,59 @@ namespace PAA2PNG
         static int Main(string[] args)
         {
             return Parser.Default.ParseArguments<Options>(args)
-                   .MapResult<Options, int>(o =>
-                    {
-                        if (!File.Exists(o.Source))
-                        {
-                            Console.Error.WriteLine($"File '{o.Source}' does not exists.");
-                            return 1;
-                        }
+                   .MapResult(o =>
+                   {
+                       var ext = Path.GetExtension(o.Source);
+                       var isPAA = ext.Equals(".paa", System.StringComparison.OrdinalIgnoreCase);
+                       var isPAC = ext.Equals(".pac", System.StringComparison.OrdinalIgnoreCase);
+                       if (!isPAA && !isPAC)
+                       {
+                           Console.Error.WriteLine($"File '{o.Source}' is not a PAA or a PAC.");
+                           return 2;
+                       }
 
-                        var ext = Path.GetExtension(o.Source);
-                        var isPAA = ext.Equals(".paa", System.StringComparison.OrdinalIgnoreCase);
-                        var isPAC = ext.Equals(".pac", System.StringComparison.OrdinalIgnoreCase);
-                        if (!isPAA && !isPAC)
-                        {
-                            Console.Error.WriteLine($"File '{o.Source}' is not a PAA or a PAC.");
-                            return 2;
-                        }
+                       if (Path.GetFileNameWithoutExtension(o.Source).Contains("*"))
+                       {
+                           var files = Directory.GetFiles(Path.GetDirectoryName(o.Source), Path.GetFileName(o.Source));
 
-                        using (var paaStream = File.OpenRead(o.Source))
-                        {
-                            var paa = new PAA(paaStream, isPAC);
-                            var pixels = PAA.GetARGB32PixelData(paa, paaStream);
-                            using (var image = Image.LoadPixelData<Bgra32>(pixels, paa.Width, paa.Height))
-                            {
-                                if (string.IsNullOrEmpty(o.Target))
-                                {
-                                    o.Target = Path.ChangeExtension(o.Source, ".png");
-                                }
+                           foreach (var file in files)
+                           {
+                               var target = string.IsNullOrEmpty(o.Target) ? 
+                                   Path.ChangeExtension(file, ".png") : 
+                                   Path.Combine(o.Target, Path.ChangeExtension(Path.GetFileName(file), ".png"));
 
-                                image.SaveAsPng(o.Target);
-                            }
-                        }
-                        return 0;
-                    },
+                               Convert(isPAC, file, target);
+                           }
+                       }
+                       else
+                       {
+                           if (!File.Exists(o.Source))
+                           {
+                               Console.Error.WriteLine($"File '{o.Source}' does not exists.");
+                               return 1;
+                           }
+                           var target = string.IsNullOrEmpty(o.Target) ?
+                             Path.ChangeExtension(o.Source, ".png") :
+                             o.Target;
+                           Convert(isPAC, o.Source, target);
+                       }
+                       return 0;
+                   },
                    e => 3);
+        }
+
+        private static void Convert(bool isPAC, string source, string target)
+        {
+            Console.WriteLine($"{source} -> {target}");
+            using (var paaStream = File.OpenRead(source))
+            {
+                var paa = new PAA(paaStream, isPAC);
+                var pixels = PAA.GetARGB32PixelData(paa, paaStream);
+                using (var image = Image.LoadPixelData<Bgra32>(pixels, paa.Width, paa.Height))
+                {
+                    image.SaveAsPng(target);
+                }
+            }
         }
     }
 }
