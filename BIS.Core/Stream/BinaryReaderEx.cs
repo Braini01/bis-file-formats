@@ -131,13 +131,17 @@ namespace BIS.Core.Streams
 
         public int ReadCompactInteger()
         {
-            int val = ReadByte();
-            if ((val & 0x80) != 0)
+            int result = 0;
+            int i = 0;
+            bool end;
+            do
             {
-                int extra = ReadByte();
-                val += (extra - 1) * 0x80;
-            }
-            return val;
+                int b = ReadByte();
+                result |= (b & 0x7f) << (i * 7);
+                end = b < 0x80;
+                i++;
+            } while (!end);
+            return result;
         }
 
         public byte[] ReadCompressed(uint expectedSize, bool forceCompressed = false)
