@@ -57,6 +57,9 @@ namespace BIS.Core.Config
                 case EntryType.ClassDelete:
                     return new ParamDeleteClass(input);
 
+                case EntryType.ArraySpec:
+                    return new ParamArraySpec(input);
+
                 default: throw new ArgumentException("Unknown ParamEntry Type", nameof(entryType));
             }
         }
@@ -172,6 +175,43 @@ $@"{classHead}
         public override string ToString(int indentionLevel = 0)
         {
             return $"{new string(' ', indentionLevel * 4)}{Name}[]={Array.ToString()};";
+        }
+    }
+
+    public class ParamArraySpec : ParamEntry
+    {
+        public int Flag { get; }
+
+        public RawArray Array { get; private set; }
+
+        public ParamArraySpec(BinaryReaderEx input)
+        {
+            Flag = input.ReadInt32();
+            Name = input.ReadAsciiz();
+            Array = new RawArray(input);
+        }
+
+        public ParamArraySpec(string name, int flag, IEnumerable<RawValue> values)
+        {
+            Name = name;
+            Flag = flag;
+            Array = new RawArray(values);
+        }
+
+        public ParamArraySpec(string name, int flag, params RawValue[] values) : this(name, flag, (IEnumerable<RawValue>)values) { }
+
+        public T[] ToArray<T>()
+        {
+            return Array.Entries.Select(e => e.Get<T>()).ToArray();
+        }
+
+        public override string ToString(int indentionLevel = 0)
+        {
+            if (Flag == 1)
+            {
+                return $"{new string(' ', indentionLevel * 4)}{Name}[]+={Array.ToString()};";
+            }
+            return $"{new string(' ', indentionLevel * 4)}{Name}[]={Array.ToString()}; // Unknown flag {Flag}";
         }
     }
 
