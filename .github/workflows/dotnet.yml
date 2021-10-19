@@ -1,0 +1,24 @@
+name: dotnet
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  dotnet:
+    runs-on: windows-2019
+    name: Build
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Setup dotnet
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+
+    - name: Build
+      run: dotnet build
+
+    - name: Test
+      run: dotnet test
