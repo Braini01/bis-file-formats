@@ -22,3 +22,7 @@ jobs:
 
     - name: Test
       run: dotnet test
+
+    - name: Build Utils
+      run: dotnet build
+      working-directory: Utils
