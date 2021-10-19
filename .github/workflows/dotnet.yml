@@ -6,8 +6,11 @@ on:
 
 jobs:
   dotnet:
-    runs-on: windows-2019
-    name: Build
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    name: Build (${{ matrix.os }})
     steps:
     - name: Checkout
       uses: actions/checkout@v2
