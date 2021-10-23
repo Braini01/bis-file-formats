@@ -22,8 +22,9 @@ namespace BIS.Core.Streams
                 BaseStream.Position = value;
             }
         }
+        public BinaryWriterEx(Stream dstStream) : base(dstStream, Encoding.ASCII) { }
 
-        public BinaryWriterEx(Stream dstStream): base(dstStream, Encoding.ASCII){}
+        public BinaryWriterEx(Stream dstStream, bool leaveOpen): base(dstStream, Encoding.ASCII, leaveOpen) {}
 
         public void WriteAscii(string text, uint len)
         {
@@ -133,6 +134,13 @@ namespace BIS.Core.Streams
                 Write(BitConverter.GetBytes(csum));
             }
             
+        }
+
+        public void WriteUInt24(uint length)
+        {
+            Write((byte)(length & 0xFF));
+            Write((byte)((length >> 8) & 0xFF));
+            Write((byte)((length >> 16) & 0xFF));
         }
 
         public void WriteFloats(float[] elements)

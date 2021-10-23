@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BCnEncoder.Net" Version="2.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\BIS.PAA\BIS.PAA.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="PaintDotNet.Base">
+      <HintPath>..\..\..\..\..\..\..\..\Program Files\paint.net\PaintDotNet.Base.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Core">
+      <HintPath>..\..\..\..\..\..\..\..\Program Files\paint.net\PaintDotNet.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Data">
+      <HintPath>..\..\..\..\..\..\..\..\Program Files\paint.net\PaintDotNet.Data.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
