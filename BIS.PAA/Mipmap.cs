@@ -49,7 +49,7 @@ namespace BIS.PAA
             input.Position = DataOffset;
 
             uint expectedSize = (uint)(Width * Height);
-            var data = new byte[expectedSize];
+
             switch (type)
             {
                 case PAAType.AI88:

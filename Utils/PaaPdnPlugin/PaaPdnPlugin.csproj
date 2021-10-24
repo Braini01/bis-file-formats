@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\BIS.PAA\BIS.PAA.csproj" />
+    <ProjectReference Include="..\..\BIS.PAA.Encoder\BIS.PAA.Encoder.csproj" />
   </ItemGroup>
 
   <ItemGroup>
