@@ -45,6 +45,8 @@ namespace BIS.PAA
             Read(stream, isPac);
         }
 
+        public IEnumerable<Mipmap> Mipmaps => mipmaps;
+
         public Mipmap this[int i] => mipmaps[i];
 
         private static PAAType MagicNumberToType(ushort magic)
@@ -100,9 +102,14 @@ namespace BIS.PAA
 
         public static byte[] GetARGB32PixelData(PAA paa, Stream paaStream, int mipmapIndex = 0)
         {
-            var input = new BinaryReaderEx(paaStream);
-
             Mipmap mipmap = paa[mipmapIndex];
+
+            return GetARGB32PixelData(paa, paaStream, mipmap);
+        }
+
+        public static byte[] GetARGB32PixelData(PAA paa, Stream paaStream, Mipmap mipmap)
+        {
+            var input = new BinaryReaderEx(paaStream);
             var rawData = mipmap.GetRawPixelData(input, paa.Type);
 
             byte[] argbPixels;
