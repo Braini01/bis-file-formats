@@ -1,15 +1,21 @@
 ﻿using BIS.Core.Streams;
+using BIS.P3D.ODOL;
 using System;
 using System.IO;
 
 namespace BIS.P3D.MLOD
 {
-    public class MLOD
+    public class MLOD : IReadObject
     {
         public int Version { get; private set; }
+
         public P3DM_LOD[] Lods { get; private set; }
 
-        public MLOD(string fileName) : this(File.OpenRead(fileName)) {}
+        public IModelInfo ModelInfo => new ComputedModelInfo(this);
+
+        public MLOD(string fileName) : this(File.OpenRead(fileName)) 
+        {
+        }
 
         public MLOD(Stream stream)
         {
@@ -22,11 +28,20 @@ namespace BIS.P3D.MLOD
             Lods = lods;
         }
 
-        private void Read(BinaryReaderEx input)
+        internal MLOD()
+        {
+        }
+
+        public void Read(BinaryReaderEx input)
         {
             if (input.ReadAscii(4) != "MLOD")
                 throw new FormatException("MLOD signature expected");
 
+            ReadContent(input);
+        }
+
+        internal void ReadContent(BinaryReaderEx input)
+        {
             Version = input.ReadInt32();
             if (Version != 257)
                 throw new ArgumentException("Unknown MLOD version");

@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using BIS.Core.Compression;
 
@@ -252,6 +253,24 @@ namespace BIS.Core.Streams
             var expectedDataSize = (uint)(nElements * elemSize);
             var stream = new BinaryReaderEx(new MemoryStream(ReadCompressed(expectedDataSize)));
             return stream.ReadArrayBase(readElement, nElements);
+        }
+
+        public Vector3 ReadVector3()
+        {
+            return new Vector3(ReadSingle(), ReadSingle(), ReadSingle());
+        }
+
+        public Vector3 ReadVector3Compressed()
+        {
+            var value = ReadUInt32();
+            double scaleFactor = -1.0 / 511;
+            uint x = value & 0x3FF;
+            uint y = (value >> 10) & 0x3FF;
+            uint z = (value >> 20) & 0x3FF;
+            if (x > 511) { x -= 1024; }
+            if (y > 511) { y -= 1024; }
+            if (z > 511) { z -= 1024; }
+            return new Vector3((float)(x * scaleFactor), (float)(y * scaleFactor), (float)(z * scaleFactor));
         }
     }
 }

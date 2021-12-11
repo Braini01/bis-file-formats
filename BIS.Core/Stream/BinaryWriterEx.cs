@@ -2,6 +2,7 @@
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 
 namespace BIS.Core.Streams
@@ -53,12 +54,27 @@ namespace BIS.Core.Streams
             WriteArrayBase(array, write);
         }
 
-        private void WriteArrayBase<T>(T[] array, Action<BinaryWriterEx, T> write)
+        public void WriteArray(float[] array)
+        {
+            WriteArray(array, (w, f) => w.Write(f));
+        }
+
+        public void WriteArrayBase<T>(T[] array, Action<BinaryWriterEx, T> write)
         {
             foreach (var item in array)
             {
                 write(this, item);
             }
+        }
+
+        public void WriteArrayBase(float[] array)
+        {
+            WriteArrayBase(array, (w, f) => w.Write(f));
+        }
+
+        public void WriteArrayBase(int[] array)
+        {
+            WriteArrayBase(array, (w, f) => w.Write(f));
         }
 
         public void WriteCompressedFloatArray(float[] array)
@@ -151,6 +167,12 @@ namespace BIS.Core.Streams
         public void WriteUshorts(ushort[] elements)
         {
             WriteArrayBase(elements, (r,e) => r.Write(e));
+        }
+        public void Write(Vector3 value)
+        {
+            Write(value.X);
+            Write(value.Y);
+            Write(value.Z);
         }
     }
 }

@@ -38,8 +38,9 @@ namespace BIS.WRP
         public RoadLink[][] Roadnet { get; private set; }
         public Object[] Objects { get; private set; }
         public byte[] MapInfos { get; private set; }
-
         IReadOnlyList<ushort> IWrp.MaterialIndex => Materials;
+        public int ObjectsCount => Objects.Length;
+
         public OPRW()
         {
 
