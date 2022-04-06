@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Text.RegularExpressions;
 using BIS.Core.Config;
 using BIS.Core.Streams;
@@ -123,6 +124,9 @@ namespace WrpUtil
                     case "RE-MATERIAL":
                         ReMaterial(editable, editedMetarial, items[1], items[2]);
                         break;
+                    case "REPLACE-SCALED":
+                        ReplaceScaled(editable, items[1], items[2]);
+                        break;
                 }
             }
 
@@ -151,6 +155,33 @@ namespace WrpUtil
 
             Console.WriteLine("Done");
             return 0;
+        }
+
+        private static void ReplaceScaled(EditableWrp editable, string initial, string replacement)
+        {
+            var oldModel = StreamHelper.Read<P3D>(Path.Combine("P:", initial)).ModelInfo;
+            var newModel = StreamHelper.Read<P3D>(Path.Combine("P:", replacement)).ModelInfo;
+
+            var xScale = oldModel.BboxMin.X / newModel.BboxMin.X;
+            var yScale = oldModel.BboxMin.Y / newModel.BboxMin.Y;
+            var zScale = oldModel.BboxMin.Z / newModel.BboxMin.Z;
+
+            var changes = 0;
+            foreach (var obj in editable.Objects)
+            {
+                if (string.Equals(obj.Model, initial, StringComparison.OrdinalIgnoreCase))
+                {
+                    obj.Model = replacement;
+                    var matrix = obj.Transform.Matrix;
+                    matrix.M11 *= xScale;
+                    matrix.M22 *= yScale;
+                    matrix.M33 *= zScale;
+                    obj.Transform.Matrix = matrix;
+                    changes++;
+                }
+            }
+            Console.WriteLine($"  -> {changes} changes");
+            Console.WriteLine();
         }
 
         private static void ReMaterial(EditableWrp editable, Dictionary<string, string> editedMetarial, string initial, string replacement)
