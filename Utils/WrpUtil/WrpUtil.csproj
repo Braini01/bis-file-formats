@@ -18,6 +18,7 @@ Forbidden by APL-ND, Bohemia Interactive EULA.</Description>
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\BIS.P3D\BIS.P3D.csproj" />
     <ProjectReference Include="..\..\BIS.PBO\BIS.PBO.csproj" />
     <ProjectReference Include="..\..\BIS.WRP\BIS.WRP.csproj" />
   </ItemGroup>

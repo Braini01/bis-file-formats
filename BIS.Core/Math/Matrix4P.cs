@@ -53,6 +53,24 @@ namespace BIS.Core.Math
             output.Write(matrix.M43);
         }
 
+        public System.Numerics.Matrix4x4 Matrix 
+        { 
+            get { return matrix; } 
+            set { matrix = value; } 
+        }
+
+        public float Altitude
+        {
+            get { return matrix.M42; }
+            set { matrix.M42 = value; }
+        }
+
+        public float AltitudeScale
+        {
+            get { return matrix.M22; }
+            set { matrix.M22 = value; }
+        }
+
         public override string ToString()
         {
             return matrix.ToString();

@@ -12,5 +12,6 @@ namespace BIS.WRP
         float[] Elevation { get; }
         string[] MatNames { get; }
         IReadOnlyList<ushort> MaterialIndex { get; }
+        int ObjectsCount { get; }
     }
 }

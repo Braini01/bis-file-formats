@@ -100,8 +100,8 @@ namespace BIS.WRP
         public ushort[] MaterialIndex { get; set; }
         public string[] MatNames { get; set; }
         public List<EditableWrpObject> Objects { get; set; } = new List<EditableWrpObject>();
-
         IReadOnlyList<ushort> IWrp.MaterialIndex => MaterialIndex;
+        public int ObjectsCount => Objects.Count;
 
         public IEnumerable<EditableWrpObject> GetNonDummyObjects() => Objects.TakeWhile(o => !string.IsNullOrEmpty(o.Model));
     }
