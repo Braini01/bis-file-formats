@@ -156,9 +156,8 @@ namespace BIS.Core.Streams
             return ReadLZSS(expectedSize);
         }
 
-        public byte[] ReadLZO(uint expectedSize, bool forceCompressed = false)
+        public byte[] ReadLZO(uint expectedSize, bool isCompressed = false)
         {
-            bool isCompressed = (expectedSize >= 1024) || forceCompressed;
             if (UseCompressionFlag)
             {
                 isCompressed = ReadBoolean();
@@ -174,23 +173,16 @@ namespace BIS.Core.Streams
 
         public byte[] ReadLZSS(uint expectedSize, bool inPAA = false)
         {
-            if (expectedSize < 1024 && !inPAA) //data is always compressed in PAAs
-            {
-                return ReadBytes((int)expectedSize);
-            }
-            else
-            {
-                // XXX: Needs testing
-                //var buffer = new byte[expectedSize];
-                //using (var lzss = new LzssStream(BaseStream, CompressionMode.Decompress, true))
-                //{
-                //    lzss.Read(buffer, 0, (int)expectedSize);
-                //}
-                //Chesksum(inPAA, buffer); //PAAs calculate checksums with signed byte values
-                byte[] buffer;
-                LZSS.ReadLZSS(BaseStream, out buffer, expectedSize, inPAA);
-                return buffer;
-            }
+            // XXX: Needs testing
+            //var buffer = new byte[expectedSize];
+            //using (var lzss = new LzssStream(BaseStream, CompressionMode.Decompress, true))
+            //{
+            //    lzss.Read(buffer, 0, (int)expectedSize);
+            //}
+            //Chesksum(inPAA, buffer); //PAAs calculate checksums with signed byte values
+            byte[] buffer;
+            LZSS.ReadLZSS(BaseStream, out buffer, expectedSize, inPAA);
+            return buffer;            
         }
 
         // XXX: Needs testing
