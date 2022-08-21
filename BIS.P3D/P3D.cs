@@ -1,6 +1,7 @@
 ﻿using BIS.Core.Math;
 using BIS.Core.Streams;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -11,7 +12,17 @@ namespace BIS.P3D
         private MLOD.MLOD editable;
         private ODOL.ODOL binarized;
 
-        public IModelInfo ModelInfo => binarized?.ModelInfo ?? editable.ModelInfo;
+        public IModelInfo ModelInfo => 
+            binarized?.ModelInfo 
+            ?? editable.ModelInfo;
+
+        public IEnumerable<ILevelOfDetail> LODs => 
+            binarized?.Lods.AsEnumerable<ILevelOfDetail>() 
+            ?? editable.Lods.AsEnumerable<ILevelOfDetail>();
+
+        public bool IsEditable =>  editable != null;
+
+        public int Version => binarized?.Version ?? editable.Version;
 
         public static bool IsODOL(string filePath)
         {
@@ -70,6 +81,8 @@ namespace BIS.P3D
             }
         }
 
+        public ODOL.ODOL ODOL => binarized;
 
+        public MLOD.MLOD MLOD => editable;
     }
 }

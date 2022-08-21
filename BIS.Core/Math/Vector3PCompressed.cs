@@ -1,9 +1,10 @@
-﻿using BIS.Core.Streams;
+﻿using System;
+using BIS.Core.Streams;
 
 namespace BIS.Core.Math
 {
 
-    public class Vector3PCompressed
+    public class Vector3PCompressed : IEquatable<Vector3PCompressed>
     {
         private int value;
         private const float scaleFactor = -1.0f / 511.0f;
@@ -67,6 +68,30 @@ namespace BIS.Core.Math
         public Vector3PCompressed(BinaryReaderEx input)
         {
             value = input.ReadInt32();
+        }
+
+        public void Write(BinaryWriterEx output)
+        {
+            output.Write(value);
+        }
+
+        public bool Equals(Vector3PCompressed other)
+        {
+            if (other != null)
+            {
+                return value == other.value;
+            }
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return value.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            return Equals(obj as Vector3PCompressed);
         }
     }
 }

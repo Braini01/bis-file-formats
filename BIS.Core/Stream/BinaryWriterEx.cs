@@ -4,6 +4,8 @@ using System.IO.Compression;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using BIS.Core.Compression;
+using BIS.Core.Math;
 
 namespace BIS.Core.Streams
 {
@@ -11,7 +13,6 @@ namespace BIS.Core.Streams
     {
         public bool UseCompressionFlag { get; set; }
         public bool UseLZOCompression { get; set; }
-
         public long Position
         {
             get
@@ -23,6 +24,8 @@ namespace BIS.Core.Streams
                 BaseStream.Position = value;
             }
         }
+
+
         public BinaryWriterEx(Stream dstStream) : base(dstStream, Encoding.ASCII) { }
 
         public BinaryWriterEx(Stream dstStream, bool leaveOpen): base(dstStream, Encoding.ASCII, leaveOpen) {}
@@ -59,6 +62,11 @@ namespace BIS.Core.Streams
             WriteArray(array, (w, f) => w.Write(f));
         }
 
+        public void WriteArray(int[] array)
+        {
+            WriteArray(array, (w, f) => w.Write(f));
+        }
+
         public void WriteArrayBase<T>(T[] array, Action<BinaryWriterEx, T> write)
         {
             foreach (var item in array)
@@ -82,15 +90,34 @@ namespace BIS.Core.Streams
             WriteCompressedArray(array, (w, v) => w.Write(v), 4);
         }
 
+        public void WriteCompressedIntArray(int[] array)
+        {
+            WriteCompressedArray(array, (w, v) => w.Write(v), 4);
+        }
+
+        public void WriteCompressedIntArray(TrackedArray<int> array)
+        {
+            WriteCompressedArray(array, (w, v) => w.Write(v), 4);
+        }
+
+        public void WriteCompressedArray<T>(TrackedArray<T> array, Action<BinaryWriterEx, T> write, int size, bool forceCompressed = false)
+        {
+            if (array.OriginCompressedData != null)
+            {
+                Write(array.OriginCompressedData);
+            }
+            else
+            {
+                WriteCompressedArray(array.Value, write, size, forceCompressed);
+            }
+        }
+
         public void WriteCompressedArray<T>(T[] array, Action<BinaryWriterEx, T> write, int size, bool forceCompressed = false)
         {
             var mem = new MemoryStream();
             using (var writer = new BinaryWriterEx(mem))
             {
-                foreach (var item in array)
-                {
-                    write(writer, item);
-                }
+                writer.WriteArrayBase(array, write);
             }
             Write(array.Length);
             var bytes = mem.ToArray();
@@ -101,8 +128,24 @@ namespace BIS.Core.Streams
             WriteCompressed(bytes, forceCompressed);
         }
 
-        private void WriteCompressed(byte[] bytes, bool forceCompressed = false)
+        public void WriteCompressed(TrackedArray<byte> bytes, bool forceCompressed = false)
         {
+            if (bytes.OriginCompressedData != null)
+            {
+                Write(bytes.OriginCompressedData);
+            }
+            else
+            {
+                WriteCompressed(bytes.Value, forceCompressed);
+            }
+        }
+
+        public void WriteCompressed(byte[] bytes, bool forceCompressed = false)
+        {
+            if (bytes.Length == 0)
+            {
+                return;
+            }
             if (UseLZOCompression)
             {
                 WriteLZO(bytes, forceCompressed);
@@ -120,7 +163,7 @@ namespace BIS.Core.Streams
             {
                 if (UseCompressionFlag)
                 {
-                    Write((byte)2);
+                    Write((byte)0);
                 }
                 Write(bytes);
             }
@@ -173,6 +216,59 @@ namespace BIS.Core.Streams
             Write(value.X);
             Write(value.Y);
             Write(value.Z);
+        }
+
+        public void WriteCondensedIntArray(int[] value)
+        {
+            WriteCondensedArray(value, (o, v) => o.Write(v), 4);
+        }
+
+        public void WriteCondensedIntArray(TrackedArray<int> value)
+        {
+            WriteCondensedArray(value, (o, v) => o.Write(v), 4);
+        }
+
+        public void WriteCondensedArray<T>(TrackedArray<T> array, Action<BinaryWriterEx, T> write, int sizeOf)
+            where T : IEquatable<T>
+        {
+            if (array.OriginCompressedData != null)
+            {
+                Write(array.OriginCompressedData);
+            }
+            else
+            {
+                WriteCondensedArray(array.Value, write, sizeOf);
+            }
+        }
+
+        public void WriteCondensedArray<T>(T[] array, Action<BinaryWriterEx, T> write, int sizeOf) 
+            where T : IEquatable<T>
+        {
+
+            var distinct = array.Distinct().ToList();
+            if (distinct.Count == 1)
+            {
+                Write(array.Length);
+                Write(true);
+                write(this, distinct[0]);
+            }
+            else
+            {
+
+                var mem = new MemoryStream();
+                using (var writer = new BinaryWriterEx(mem))
+                {
+                    writer.WriteArrayBase(array, write);
+                }
+                var bytes = mem.ToArray();
+                if (array.Length * sizeOf != bytes.Length)
+                {
+                    throw new InvalidOperationException();
+                }
+                Write(array.Length);
+                Write(false);
+                WriteCompressed(mem.ToArray());
+            }
         }
     }
 }

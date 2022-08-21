@@ -112,7 +112,7 @@ namespace BIS.P3D.ODOL
             Frequent = input.ReadBoolean();
             if (version >= 31)
             {
-                input.ReadUInt32();
+                Unused31 = input.ReadUInt32();
             }
             if (version >= 57)
             {
@@ -121,6 +121,123 @@ namespace BIS.P3D.ODOL
                 PreferredShadowBufferLodVis = input.ReadArrayBase(i => i.ReadInt32(), noOfLods);
             }
         }
+
+        public void Write(BinaryWriterEx output, int version, int noOfLods)
+        {
+            output.Write(Special);
+            output.Write(BoundingSphere);
+            output.Write(GeometrySphere);
+            output.Write(Remarks);
+            output.Write(AndHints);
+            output.Write(OrHints);
+            AimingCenter.Write(output);
+            Color.Write(output);
+            ColorType.Write(output);
+            output.Write(ViewDensity);
+            BboxMin.Write(output);
+            BboxMax.Write(output);
+            if (version >= 70)
+            {
+                output.Write(LodDensityCoef);
+            }
+            if (version >= 71)
+            {
+                output.Write(DrawImportance);
+            }
+            if (version >= 52)
+            {
+                BboxMinVisual.Write(output);
+                BboxMaxVisual.Write(output);
+            }
+            BoundingCenter.Write(output);
+            GeometryCenter.Write(output);
+            CenterOfMass.Write(output);
+            output.WriteArrayBase(InvInertia, (b, t) => t.Write(b));
+            output.Write(AutoCenter);
+            output.Write(LockAutoCenter);
+            output.Write(CanOcclude);
+            output.Write(CanBeOccluded);
+            if (version >= 73)
+            {
+                output.Write(AICovers);
+            }
+            if ((version >= 42 && version < 10000) || version >= 10042)
+            {
+                output.Write(HtMin);
+                output.Write(HtMax);
+                output.Write(AfMax);
+                output.Write(MfMax);
+            }
+            if ((version >= 43 && version < 10000) || version >= 10043)
+            {
+                output.Write(MFact);
+                output.Write(TBody);
+            }
+            if (version >= 33)
+            {
+                output.Write(ForceNotAlphaModel);
+            }
+            if (version >= 37)
+            {
+                output.Write(SbSource);
+                output.Write(Prefershadowvolume);
+            }
+            if (version >= 48)
+            {
+                output.Write(ShadowOffset);
+            }
+            output.Write(Animated);
+            Skeleton.Write(output, version, noOfLods);
+            output.Write(MapType);
+            output.WriteCompressedFloatArray(MassArray);
+            output.Write(Mass);
+            output.Write(InvMass);
+            output.Write(Armor);
+            output.Write(InvArmor);
+            if (version >= 72)
+            {
+                output.Write(ExplosionShielding);
+            }
+            if (version >= 53)
+            {
+                output.Write(GeometrySimple);
+            }
+            if (version >= 54)
+            {
+                output.Write(GeometryPhys);
+            }
+            output.Write(Memory);
+            output.Write(Geometry);
+            output.Write(GeometryFire);
+            output.Write(GeometryView);
+            output.Write(GeometryViewPilot);
+            output.Write(GeometryViewGunner);
+            output.Write(UnknownByte);
+            output.Write(GeometryViewCargo);
+            output.Write(LandContact);
+            output.Write(Roadway);
+            output.Write(Paths);
+            output.Write(Hitpoints);
+            output.Write((uint)MinShadow);
+            if (version >= 38)
+            {
+                output.Write(CanBlend);
+            }
+            output.WriteAsciiz(Class);
+            output.WriteAsciiz(Damage);
+            output.Write(Frequent);
+            if (version >= 31)
+            {
+                output.Write(Unused31);
+            }
+            if (version >= 57)
+            {
+                output.WriteArrayBase(PreferredShadowVolumeLod, (w, v) => w.Write(v));
+                output.WriteArrayBase(PreferredShadowBufferLod, (w, v) => w.Write(v));
+                output.WriteArrayBase(PreferredShadowBufferLodVis, (w, v) => w.Write(v));
+            }
+        }
+
 
         public int Special { get; }
         public float BoundingSphere { get; }
@@ -188,5 +305,6 @@ namespace BIS.P3D.ODOL
         public int[] PreferredShadowVolumeLod { get; }
         public int[] PreferredShadowBufferLod { get; }
         public int[] PreferredShadowBufferLodVis { get; }
+        public uint Unused31 { get; }
     }
 }

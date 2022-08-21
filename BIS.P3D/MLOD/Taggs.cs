@@ -1,6 +1,7 @@
 ﻿using BIS.Core.Math;
 using BIS.Core.Streams;
 using System;
+using System.Linq;
 
 namespace BIS.P3D.MLOD
 {
@@ -62,6 +63,13 @@ namespace BIS.P3D.MLOD
                     return new NamedSelectionTagg(input, nPoints, faces.Length);
             }
         }
+
+        public abstract uint ComputeDataSize();
+
+        public void UpdateDataSize()
+        {
+            DataSize = ComputeDataSize();
+        }
     }
 
     public class AnimationTagg : Tagg
@@ -96,12 +104,17 @@ namespace BIS.P3D.MLOD
             for (int index = 0; index < FramePoints.Length; ++index)
                 FramePoints[index].Write(output);
         }
+
+        public override uint ComputeDataSize()
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class LockTagg : Tagg
     {
-        public bool[] LockedPoints { get; private set; }
-        public bool[] LockedFaces { get; private set; }
+        public bool[] LockedPoints { get; set; }
+        public bool[] LockedFaces { get; set; }
 
         public LockTagg(BinaryReaderEx input, int nPoints, int nFaces) : base(input)
         {
@@ -125,6 +138,11 @@ namespace BIS.P3D.MLOD
                 output.Write(LockedPoints[index]);
             for (int index = 0; index < LockedFaces.Length; ++index)
                 output.Write(LockedFaces[index]);
+        }
+
+        public override uint ComputeDataSize()
+        {
+            return (uint)(LockedPoints.Length + LockedFaces.Length);
         }
     }
 
@@ -156,6 +174,11 @@ namespace BIS.P3D.MLOD
             uint num = DataSize / 4;
             for (int index = 0; index < num; ++index)
                 output.Write(Mass[index]);
+        }
+
+        public override uint ComputeDataSize()
+        {
+            return (uint)(Mass.Length * 4);
         }
     }
 
@@ -192,6 +215,11 @@ namespace BIS.P3D.MLOD
             for (int index = 0; index < Faces.Length; ++index)
                 output.Write(Faces[index]);
         }
+
+        public override uint ComputeDataSize()
+        {
+            return (uint)(Points.Length + Faces.Length);
+        }
     }
 
     public class PropertyTagg : Tagg
@@ -222,7 +250,12 @@ namespace BIS.P3D.MLOD
             output.WriteAscii(PropertyName, 64);
             output.WriteAscii(Value, 64);
         }
+        public override uint ComputeDataSize()
+        {
+            return (uint)128;
+        }
     }
+
     public class SelectedTagg : Tagg
     {
         public byte[] WeightedPoints { get; set; }
@@ -250,6 +283,11 @@ namespace BIS.P3D.MLOD
                 output.Write(WeightedPoints[index]);
             for (int index = 0; index < Faces.Length; ++index)
                 output.Write(Faces[index]);
+        }
+
+        public override uint ComputeDataSize()
+        {
+            return (uint)(WeightedPoints.Length + Faces.Length);
         }
     }
     public class SharpEdgesTagg : Tagg
@@ -281,6 +319,11 @@ namespace BIS.P3D.MLOD
                 output.Write(PointIndices[index, 0]);
                 output.Write(PointIndices[index, 1]);
             }
+        }
+
+        public override uint ComputeDataSize()
+        {
+            return (uint)PointIndices.Length * 4;
         }
     }
 
@@ -318,6 +361,7 @@ namespace BIS.P3D.MLOD
         public override void Write(BinaryWriterEx output)
         {
             WriteHeader(output);
+            var pos = output.Position;
             output.Write(UvSetNr);
             for (int i = 0; i < FaceUVs.Length; ++i)
             {
@@ -327,6 +371,13 @@ namespace BIS.P3D.MLOD
                     output.Write(FaceUVs[i][j, 1]);
                 }
             }
+            var delta = (output.Position - pos);
+
+        }
+
+        public override uint ComputeDataSize()
+        {
+            return (uint)(FaceUVs.Sum(f => f.Length * 4) + 4);
         }
     }
 
@@ -339,6 +390,11 @@ namespace BIS.P3D.MLOD
         public override void Write(BinaryWriterEx output)
         {
             WriteHeader(output);
+        }
+
+        public override uint ComputeDataSize()
+        {
+            return 0;
         }
     }
 }

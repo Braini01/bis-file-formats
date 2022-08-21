@@ -5,7 +5,7 @@ using System.IO;
 
 namespace BIS.P3D.MLOD
 {
-    public class MLOD : IReadObject
+    public class MLOD : IReadWriteObject
     {
         public int Version { get; private set; }
 
@@ -49,7 +49,7 @@ namespace BIS.P3D.MLOD
             Lods = input.ReadArray(inp => new P3DM_LOD(inp));
         }
 
-        private void Write(BinaryWriterEx output)
+        public void Write(BinaryWriterEx output)
         {
             output.WriteAscii("MLOD", 4);
             output.Write(Version);

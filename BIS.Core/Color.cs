@@ -64,6 +64,11 @@ namespace BIS.Core
             this.value = value;
         }
 
+        public void Write(BinaryWriterEx output)
+        {
+            output.Write(value);
+        }
+
         public PackedColor(byte r, byte g, byte b, byte a=255)
         {
             value = PackColor(r, g, b, a);
