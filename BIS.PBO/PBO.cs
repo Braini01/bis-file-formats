@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using BIS.Core;
 using BIS.Core.Streams;
 
@@ -9,6 +10,8 @@ namespace BIS.PBO
 {
     public class PBO
     {
+        public static DateTime Epoch { get; } = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+
         private static FileEntry VersionEntry;
         private static FileEntry EmptyEntry;
 
@@ -24,8 +27,14 @@ namespace BIS.PBO
                 return pboFileStream;
             }
         }
+        public List<IPBOFileEntry> Files { get; } = new List<IPBOFileEntry>();
+
+        [Obsolete]
         public LinkedList<FileEntry> FileEntries { get; } = new LinkedList<FileEntry>();
+
+        [Obsolete]
         public LinkedList<string> Properties { get; } = new LinkedList<string>();
+        public List<KeyValuePair<string,string>> PropertiesPairs { get; } = new List<KeyValuePair<string, string>>();
         public int DataOffset { get; private set; }
         public string Prefix { get; private set; }
         public string FileName => Path.GetFileName(PBOFilePath);
@@ -53,10 +62,16 @@ namespace BIS.PBO
             }
         }
 
+        public PBO()
+        {
+
+        }
+
         private void ReadHeader(BinaryReaderEx input)
         {
             int curOffset = 0;
             FileEntry pboEntry;
+#pragma warning disable CS0612 // Le type ou le membre est obsolète
             do
             {
                 pboEntry = new FileEntry(input)
@@ -79,6 +94,8 @@ namespace BIS.PBO
                         value = input.ReadAsciiz();
                         Properties.AddLast(value);
 
+                        PropertiesPairs.Add(new KeyValuePair<string, string>(name, value));
+
                         if (name == "prefix")
                             Prefix = value;
                     }
@@ -88,9 +105,13 @@ namespace BIS.PBO
                         throw new Exception("metaData count is not even.");
                 }
                 else if (pboEntry.FileName != "")
+                {
                     FileEntries.AddLast(pboEntry);
+                    Files.Add(new PBOFileExisting(pboEntry, this));
+                }
             }
-            while (pboEntry.FileName != "" || FileEntries.Count == 0);
+            while (pboEntry.FileName != "" || Files.Count == 0);
+#pragma warning restore CS0612 // Le type ou le membre est obsolète
 
             DataOffset = (int)input.Position;
 
@@ -121,11 +142,13 @@ namespace BIS.PBO
             return bytes;
         }
 
+        [Obsolete]
         public void ExtractFile(FileEntry entry, string dst)
         {
             ExtractFiles(Methods.Yield(entry), dst);
         }
 
+        [Obsolete]
         public void ExtractFiles(IEnumerable<FileEntry> entries, string dst, bool keepStreamOpen = false)
         {
             foreach (var entry in entries.OrderBy(e => e.StartOffset))
@@ -143,15 +166,32 @@ namespace BIS.PBO
             }
         }
 
+        public void ExtractFiles(IEnumerable<IPBOFileEntry> entries, string target)
+        {
+            foreach (var entry in entries)
+            {
+                var path = Path.Combine(target, entry.FileName);
+
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+
+                using(var targetFile = File.Create(path))
+                {
+                    using(var source = entry.OpenRead())
+                    {
+                        source.CopyTo(targetFile);
+                    }
+                }
+            }
+        }
+
         public void ExtractAllFiles(string directory)
         {
-            var dstPath = Path.Combine(directory, Prefix);
-            ExtractFiles(FileEntries, dstPath);
+            ExtractFiles(Files, Path.Combine(directory, Prefix));
         }
 
         public MemoryStream GetFileEntryStream(FileEntry entry)
         {
-            return GetFileEntryStreams(Methods.Yield(entry)).First();
+            return new MemoryStream(GetFileData(entry), false);
         }
 
         public IEnumerable<MemoryStream> GetFileEntryStreams(IEnumerable<FileEntry> entries, bool keepStreamOpen = false)
@@ -169,11 +209,6 @@ namespace BIS.PBO
             }
         }
 
-        private void WriteBasicHeader(BinaryWriterEx output)
-        {
-            WriteBasicHeader(output, FileEntries);
-        }
-
         private static void WriteBasicHeader(BinaryWriterEx output, IEnumerable<FileEntry> fileEntries)
         {
             foreach (var entry in fileEntries)
@@ -182,11 +217,6 @@ namespace BIS.PBO
             }
 
             EmptyEntry.Write(output);
-        }
-
-        private void WriteProperties(BinaryWriterEx output)
-        {
-            WriteProperties(output, Properties);
         }
 
         private static void WriteProperties(BinaryWriterEx output, IEnumerable<string> properties)
@@ -201,12 +231,95 @@ namespace BIS.PBO
             output.Write((byte)0); //empty string
         }
 
-        private void WriteHeader(BinaryWriterEx output)
+        public void Save()
         {
-            WriteProperties(output);
-            WriteBasicHeader(output);
+            if (string.IsNullOrEmpty(PBOFilePath))
+            {
+                throw new InvalidOperationException("PBO is not bound to a file, please use SaveTo() instead.");
+            }
+            SaveTo(PBOFilePath);
         }
 
+        public void SaveTo(string targetFile)
+        {
+            if (PBOFilePath == null)
+            {
+                SaveToInternal(targetFile, true);
+                PBOFilePath = targetFile;
+                return;
+            }
+            if (string.Equals(Path.GetFullPath(targetFile), Path.GetFullPath(PBOFilePath), StringComparison.OrdinalIgnoreCase))
+            {
+                var temp = Path.GetTempFileName();
+                SaveToInternal(temp, true);
+                if (pboFileStream != null)
+                {
+                    pboFileStream.Close();
+                    pboFileStream = null;
+                }
+                File.Copy(temp, targetFile, true);
+                return;
+            }
+            SaveToInternal(targetFile, false);
+        }
+
+        private void SaveToInternal(string targetFile, bool isReplaceSelf)
+        {
+            var entries = Files.Select(e => new FileEntry() { 
+                FileName = e.FileName, 
+                TimeStamp = e.TimeStamp,
+                DataSize = e.Size, 
+                UncompressedSize = 0, 
+                CompressedMagic = 0 
+            }).ToList();
+
+            var offset = 0;
+            foreach(var entry in entries)
+            {
+                entry.StartOffset = offset;
+                offset += entry.DataSize;
+            }
+
+            using(var target = File.Create(targetFile))
+            {
+                using (var output = new BinaryWriterEx(target, true))
+                {
+                    WriteProperties(output, PropertiesPairs.SelectMany(p => new[] { p.Key, p.Value }));
+                    WriteBasicHeader(output, entries);
+                }
+                foreach(var file in Files)
+                {
+                    using (var source = file.OpenRead())
+                    {
+                        source.CopyTo(target);
+                    }
+                }
+                target.Position = 0;
+                byte[] hash;
+                using (var sha1 = new SHA1Managed())
+                {
+                    hash = sha1.ComputeHash(target);
+                }
+                target.WriteByte(0x0);
+                target.Write(hash, 0, 20);
+            }
+
+            if (isReplaceSelf)
+            {
+                Files.Clear();
+                Files.AddRange(entries.Select(e => new PBOFileExisting(e, this)));
+
+#pragma warning disable CS0612 // Le type ou le membre est obsolète
+                FileEntries.Clear();
+                foreach (var entry in entries)
+                {
+                    FileEntries.AddLast(entry);
+                }
+#pragma warning restore CS0612 // Le type ou le membre est obsolète
+            }
+        }
+
+        [Obsolete]
         public static IEnumerable<KeyValuePair<FileEntry, PBO>> GetAllNonEmptyFileEntries(string path)
         {
             var allPBOs = Directory.GetFiles(path, "*.pbo", SearchOption.AllDirectories);

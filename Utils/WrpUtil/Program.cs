@@ -364,7 +364,7 @@ namespace WrpUtil
                         pboInfos.Mod = infos;
                         pboInfos.Path = pboPath;
                         pboInfos.Files = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                        foreach (var entry in pbo.FileEntries)
+                        foreach (var entry in pbo.Files)
                         {
                             if (string.Equals(Path.GetExtension(entry.FileName), ".p3d", StringComparison.OrdinalIgnoreCase))
                             {
