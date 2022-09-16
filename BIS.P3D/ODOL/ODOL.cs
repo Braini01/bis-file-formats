@@ -30,6 +30,36 @@ namespace BIS.P3D.ODOL
             WriteContent(output);
         }
 
+        internal void ReadHeaderOnly(BinaryReaderEx input)
+        {
+            Version = input.ReadInt32();
+            input.Version = Version;
+
+            if (Version >= 44)
+            {
+                input.UseLZOCompression = true;
+            }
+            if (Version >= 64)
+            {
+                input.UseCompressionFlag = true;
+            }
+            if (Version >= 59)
+            {
+                AppID = input.ReadUInt32();
+            }
+            if (Version >= 58)
+            {
+                MuzzleFlash = input.ReadAsciiz();
+            }
+
+            var resolutions = input.ReadFloatArray();
+            var noOfLods = resolutions.Length;
+
+            Lods = new LOD[noOfLods];
+
+            ModelInfo = new ModelInfo(input, Version, noOfLods);
+        }
+
         internal void ReadContent(BinaryReaderEx input)
         {
             Version = input.ReadInt32();

@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using BIS.Core;
 using BIS.Core.Streams;
+using BIS.P3D;
 using BIS.P3D.MLOD;
+using BIS.PBO;
 using CommandLine;
 
 namespace P3dUtil
@@ -35,6 +38,16 @@ namespace P3dUtil
 
             [Option('n', "no-backup", Required = false, HelpText = "Do not generate a backup file (.p3d.bak).")]
             public bool NoBackup { get; set; }
+
+            [Option('r', "recursive", Required = false, HelpText = "If model is a pattern, do a recursive file search.")]
+            public bool IsRecursive { get; set; }
+        }
+
+        [Verb("hashid", HelpText = "Generate HashId for all models found")]
+        class HashIdOptions
+        {
+            [Value(0, MetaName = "model", HelpText = "P3D file(s) (can be a pattern)", Required = true)]
+            public string Source { get; set; }
 
             [Option('r', "recursive", Required = false, HelpText = "If model is a pattern, do a recursive file search.")]
             public bool IsRecursive { get; set; }
@@ -85,15 +98,186 @@ namespace P3dUtil
             public float YTo { get; set; } = float.MaxValue;
         }
 
+        [Verb("add-selection", HelpText = "Add a named selection for faces having the specified material and texture. (MLOD or ODOL)")]
+        class AddSelectionOptions
+        {
+            [Value(0, MetaName = "model", HelpText = "P3D file(s) (can be a pattern)", Required = true)]
+            public string Source { get; set; }
+
+            [Value(1, MetaName = "selection-name", HelpText = "Selection name to create.", Required = true)]
+            public string SelectionName { get; set; }
+
+            [Value(2, MetaName = "material", HelpText = "Faces material.", Required = true)]
+            public string Material { get; set; }
+
+            [Value(3, MetaName = "texture", HelpText = "Faces texture.", Required = true)]
+            public string Texture { get; set; }
+
+            [Option('n', "no-backup", Required = false, HelpText = "Do not generate a backup file (.p3d.bak).")]
+            public bool NoBackup { get; set; }
+        }
+
         public static int Main(string[] args)
         {
-            return CommandLine.Parser.Default.ParseArguments<TemlateOptions, ReplaceOptions, UvTransformOptions, RemoveFacesOptions>(args)
+            return CommandLine.Parser.Default.ParseArguments<TemlateOptions, ReplaceOptions, UvTransformOptions, RemoveFacesOptions, AddSelectionOptions, HashIdOptions>(args)
               .MapResult(
                 (TemlateOptions opts) => Templating(opts),
                 (ReplaceOptions opts) => Replace(opts),
                 (UvTransformOptions opts) => UvTransform(opts),
                 (RemoveFacesOptions opts) => RemoveFaces(opts),
+                (AddSelectionOptions opts) => AddSelection(opts),
+                (HashIdOptions opts) => HashId(opts),
                 errs => 1);
+        }
+
+        private static int HashId(HashIdOptions opts)
+        {
+            Console.WriteLine("File;LOD;Vertex;Hash15;Hash8");
+            if (Path.GetFileNameWithoutExtension(opts.Source).Contains("*"))
+            {
+                var files = Directory.GetFiles(Path.GetDirectoryName(opts.Source), Path.GetFileName(opts.Source), opts.IsRecursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+
+                foreach (var file in files)
+                {
+                    if ( string.Equals(Path.GetExtension(file), ".pbo", StringComparison.OrdinalIgnoreCase))
+                    {
+                        HashIdPbo(file);
+                    }
+                    else
+                    {
+                        HashId(file);
+                    }
+                }
+            }
+            else
+            {
+                if (!File.Exists(opts.Source))
+                {
+                    Console.Error.WriteLine($"File '{opts.Source}' does not exists.");
+                    return 1;
+                }
+                HashId(opts.Source);
+            }
+            return 0;
+        }
+
+        private static void HashIdPbo(string file)
+        {
+            using (var pbo = new PBO(file, true))
+            {
+                foreach (var entry in pbo.Files)
+                {
+                    if (entry.Size > 1024)
+                    {
+                        try
+                        {
+                            using (var data = entry.OpenRead())
+                            {
+                                if (P3D.IsMLOD(data) || P3D.IsODOL(data))
+                                {
+                                    HashId(file + "#" + entry.FileName, StreamHelper.Read<P3D>(data));
+                                }
+                            }
+                        }
+                        catch
+                        {
+
+                        }
+                    }
+                }
+            }
+        }
+
+        private static void HashId(string file)
+        {
+            HashId(file, StreamHelper.Read<BIS.P3D.P3D>(file));
+        }
+
+        private static void HashId(string file, P3D p3d)
+        {
+            var lod = p3d.LODs.Where(l => l.Resolution < 1000).OrderBy(r => r.Resolution).FirstOrDefault();
+            if (lod != null)
+            {
+                var id = lod.GetModelHashId();
+                if (id != BIS.P3D.LodHashId.Empty)
+                {
+                    Console.WriteLine($"{file};{lod.Resolution};{id.Vertex};{id.Hash15AsString};{id.Hash8AsString}");
+                }
+            }
+        }
+
+        private static int AddSelection(AddSelectionOptions opts)
+        {
+            Console.WriteLine($"Process '{opts.Source}'...");
+            if (!opts.NoBackup)
+            {
+                BackupFile(opts.Source);
+            }
+
+            var reportedReplaces = new HashSet<string>();
+
+            var p3d = StreamHelper.Read<BIS.P3D.P3D>(opts.Source);
+
+            if (p3d.MLOD != null)
+            {
+                foreach (var lod in p3d.MLOD.Lods)
+                {
+                    if (lod.NamedSelections.Any(ns => string.Equals(ns.Name, opts.SelectionName, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        Console.WriteLine($"  Selection already exists in LOD {lod.Resolution}");
+                        continue;
+                    }
+                    var faces = lod.Faces.Where(f =>
+                            f.Texture.Contains(opts.Texture, StringComparison.OrdinalIgnoreCase) &&
+                            f.Material.Contains(opts.Material, StringComparison.OrdinalIgnoreCase)
+                        ).ToList();
+                    if (faces.Count > 0)
+                    {
+                        Console.WriteLine($"  Add selection to LOD {lod.Resolution}");
+
+                        lod.Taggs.AddLast(new NamedSelectionTagg(
+                            opts.SelectionName, 
+                            lod.Points.Select(_ => (byte)0).ToArray(), 
+                            lod.Faces.Select(f => faces.Contains(f) ? (byte)1 : (byte)0).ToArray()));
+                    }
+                }
+                p3d.MLOD.Write(opts.Source);
+            }
+            else
+            {
+                foreach (var lod in p3d.ODOL.Lods)
+                {
+                    if (lod.NamedSelections.Any(ns => string.Equals(ns.Name, opts.SelectionName, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        Console.WriteLine($"  Selection already exists in LOD {lod.Resolution}");
+                        continue;
+                    }
+                    var texture = lod.Textures.FirstOrDefault(t => t.Contains(opts.Texture, StringComparison.OrdinalIgnoreCase));
+                    var material = lod.Materials.FirstOrDefault(m => m.MaterialName.Contains(opts.Material, StringComparison.OrdinalIgnoreCase));
+                    if (texture != null && material != null)
+                    {
+                        var textureIndex = Array.IndexOf(lod.Textures, texture);
+                        var materialIndex = Array.IndexOf(lod.Materials, material);
+                        var sections = lod.Sections.Where(s => s.MaterialIndex == materialIndex && s.TextureIndex == textureIndex).ToList();
+                        if (sections.Count > 0)
+                        {
+                            Console.WriteLine($"  Add selection to LOD {lod.Resolution}");
+
+                            lod.NamedSelections = 
+                                lod.NamedSelections.Concat(Methods.Yield(new BIS.P3D.ODOL.NamedSelection(
+                                    opts.SelectionName,
+                                    true,
+                                    sections.Select(s => Array.IndexOf(lod.Sections, s))
+                                ))).ToArray();
+                        }
+                    }
+                }
+                p3d.ODOL.Write(opts.Source);
+            }
+
+            Console.WriteLine("  Done");
+
+            return 0;
         }
 
         private static int RemoveFaces(RemoveFacesOptions opts)

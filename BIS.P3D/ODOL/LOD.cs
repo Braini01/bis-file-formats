@@ -144,7 +144,7 @@ namespace BIS.P3D.ODOL
         public TrackedArray<int> VertexToPoint { get; }
 		internal Polygons Polygons { get; }
 		public Section[] Sections { get; }
-		internal NamedSelection[] NamedSelections { get; }
+		public NamedSelection[] NamedSelections { get; set; }
         public Tuple<string, string>[] NamedProperties { get; }
 		internal Keyframe[] Frames { get; }
         public int ColorTop { get; }
@@ -167,7 +167,7 @@ namespace BIS.P3D.ODOL
 
 		public int FaceCount => Polygons.Faces.Length;
 
-		IEnumerable<string> ILevelOfDetail.NamedSelections => NamedSelections.Select(s => s.Name);
+		IEnumerable<INamedSelection> ILevelOfDetail.NamedSelections => NamedSelections.Select(s => new NamedSelectionInfos(this, s));
 
 		internal void Write(BinaryWriterEx output, int version)
 		{
@@ -201,7 +201,7 @@ namespace BIS.P3D.ODOL
 			output.WriteArray(Sections, (o, v) => v.Write(o, version));
 			output.WriteArray(NamedSelections, (o, v) => v.Write(o, version));
 			output.WriteArray(NamedProperties, (o, v) => { o.WriteAsciiz(v.Item1); o.WriteAsciiz(v.Item2); });
-
+			
 			output.WriteArray(Frames, (o, v) => v.Write(o, version));
 			output.Write(ColorTop);
 			output.Write(Color);
@@ -266,6 +266,11 @@ namespace BIS.P3D.ODOL
 			return Materials.Select(m => m.MaterialName)
 				.Concat(Sections.Where(s => s.MaterialIndex != -1).Select(s => s.Material))
 				.Distinct();
+        }
+
+        public LodHashId GetModelHashId()
+        {
+			return LodHashId.Compute(Vertices);
         }
     }
 }

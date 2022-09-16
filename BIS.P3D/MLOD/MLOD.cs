@@ -13,7 +13,8 @@ namespace BIS.P3D.MLOD
 
         public IModelInfo ModelInfo => new ComputedModelInfo(this);
 
-        public MLOD(string fileName) : this(File.OpenRead(fileName)) 
+        public MLOD(string fileName)
+            : this(File.OpenRead(fileName)) 
         {
         }
 
@@ -22,7 +23,7 @@ namespace BIS.P3D.MLOD
             Read(new BinaryReaderEx(stream));
         }
 
-        public MLOD(P3DM_LOD[] lods)
+        public MLOD(P3DM_LOD[] lods) 
         {
             Version = 257;
             Lods = lods;
@@ -30,6 +31,7 @@ namespace BIS.P3D.MLOD
 
         internal MLOD()
         {
+
         }
 
         public void Read(BinaryReaderEx input)

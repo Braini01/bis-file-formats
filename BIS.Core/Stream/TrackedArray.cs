@@ -6,6 +6,11 @@ namespace BIS.Core
 {
     public class TrackedArray<T> : IReadOnlyList<T>
     {
+        public TrackedArray()
+        {
+            Value = new T[0];
+        }
+
         public TrackedArray(IEnumerable<T> value)
         {
             Value = value.ToArray();

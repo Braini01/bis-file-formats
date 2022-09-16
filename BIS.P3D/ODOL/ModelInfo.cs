@@ -72,7 +72,7 @@ namespace BIS.P3D.ODOL
             }
             Animated = input.ReadBoolean();
             Skeleton = new Skeleton(input, version, noOfLods);
-            MapType = input.ReadByte();
+            MapType = (MapType)input.ReadByte();
             MassArray = input.ReadCompressedFloatArray();
             Mass = input.ReadSingle();
             InvMass = input.ReadSingle();
@@ -188,7 +188,7 @@ namespace BIS.P3D.ODOL
             }
             output.Write(Animated);
             Skeleton.Write(output, version, noOfLods);
-            output.Write(MapType);
+            output.Write((byte)MapType);
             output.WriteCompressedFloatArray(MassArray);
             output.Write(Mass);
             output.Write(InvMass);
@@ -276,7 +276,7 @@ namespace BIS.P3D.ODOL
         public float ShadowOffset { get; }
         public bool Animated { get; }
         public Skeleton Skeleton { get; }
-        public byte MapType { get; }
+        public MapType MapType { get; }
         public float[] MassArray { get; }
         public float Mass { get; }
         public float InvMass { get; }

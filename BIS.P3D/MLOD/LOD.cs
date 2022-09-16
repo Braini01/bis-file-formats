@@ -17,11 +17,11 @@ namespace BIS.P3D.MLOD
         public LinkedList<Tagg> Taggs { get; private set; }
         public float Resolution { get; private set; }
 
-        public IEnumerable<Tuple<string, string>> NamedProperties => Taggs.OfType<PropertyTagg>().Select(p => new Tuple<string, string>(p.PropertyName, p.Value));
+        public IEnumerable<Tuple<string, string>> NamedProperties => Taggs.OfType<PropertyTagg>().Select(p => new Tuple<string, string>(p.PropertyName.Trim('\0',' '), p.Value.Trim('\0', ' ')));
 
         public int FaceCount => Faces.Length;
 
-        public IEnumerable<string> NamedSelections => Taggs.OfType<NamedSelectionTagg>().Select(p => p.Name);
+        public IEnumerable<INamedSelection> NamedSelections => Taggs.OfType<NamedSelectionTagg>().Select(p => new NamedSelectionInfos(this, p));
 
         public uint VertexCount => (uint)Points.Length;
 
@@ -120,6 +120,11 @@ namespace BIS.P3D.MLOD
         public IEnumerable<string> GetMaterials()
         {
             return Faces.Select(f => f.Material).Distinct();
+        }
+
+        public LodHashId GetModelHashId()
+        {
+            return LodHashId.Compute(Points);
         }
     }
 }

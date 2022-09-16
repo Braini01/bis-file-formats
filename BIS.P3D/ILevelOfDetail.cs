@@ -8,10 +8,12 @@ namespace BIS.P3D
     {
         float Resolution { get; }
         IEnumerable<Tuple<string, string>> NamedProperties { get; }
-        IEnumerable<string> NamedSelections { get; }
+        IEnumerable<INamedSelection> NamedSelections { get; }
         int FaceCount { get; }
         uint VertexCount { get; }
         IEnumerable<string> GetTextures();
         IEnumerable<string> GetMaterials();
+
+        LodHashId GetModelHashId();
     }
 }

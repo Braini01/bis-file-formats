@@ -8,7 +8,7 @@ using BIS.Core.Streams;
 
 namespace BIS.PBO
 {
-    public class PBO
+    public class PBO : IDisposable
     {
         public static DateTime Epoch { get; } = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
@@ -123,20 +123,23 @@ namespace BIS.PBO
 
         private byte[] GetFileData(FileEntry entry)
         {
-            PBOFileStream.Position = DataOffset + entry.StartOffset;
             byte[] bytes;
-            if (entry.CompressedMagic == 0)
+            lock (this)
             {
-                bytes = new byte[entry.DataSize];
-                PBOFileStream.Read(bytes, 0, entry.DataSize);
-            }
-            else
-            {
-                if (!entry.IsCompressed)
-                    throw new Exception("Unexpected packingMethod");
+                PBOFileStream.Position = DataOffset + entry.StartOffset;
+                if (entry.CompressedMagic == 0)
+                {
+                    bytes = new byte[entry.DataSize];
+                    PBOFileStream.Read(bytes, 0, entry.DataSize);
+                }
+                else
+                {
+                    if (!entry.IsCompressed)
+                        throw new Exception("Unexpected packingMethod");
 
-                var br = new BinaryReaderEx(PBOFileStream);
-                bytes = br.ReadLZSS((uint)entry.UncompressedSize);
+                    var br = new BinaryReaderEx(PBOFileStream);
+                    bytes = br.ReadLZSS((uint)entry.UncompressedSize);
+                }
             }
 
             return bytes;
@@ -332,6 +335,15 @@ namespace BIS.PBO
                     if (entry.DataSize > 0)
                         yield return new KeyValuePair<FileEntry, PBO>(entry, pbo);
                 }
+            }
+        }
+
+        public void Dispose()
+        {
+            if (pboFileStream != null)
+            {
+                pboFileStream.Close();
+                pboFileStream = null;
             }
         }
     }

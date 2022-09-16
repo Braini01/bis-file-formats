@@ -16,5 +16,9 @@ namespace BIS.P3D
         /// Maximum coordinates of bounding box
         /// </summary>
         Vector3P BboxMax { get; }
+
+        MapType MapType { get; }
+
+        string Class { get; }
     }
 }

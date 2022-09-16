@@ -1,9 +1,10 @@
-﻿using BIS.Core;
+﻿using System.Collections.Generic;
+using BIS.Core;
 using BIS.Core.Streams;
 
 namespace BIS.P3D.ODOL
 {
-    internal class NamedSelection
+    public class NamedSelection
     {
         public NamedSelection(BinaryReaderEx input, int version)
         {
@@ -15,6 +16,16 @@ namespace BIS.P3D.ODOL
             SelectedVertices = LOD.ReadCompressedVertexIndexArray(input, version);
             ExpectedSize = input.ReadInt32();
             SelectedVerticesWeights = input.ReadCompressedTracked((uint)ExpectedSize);
+        }
+
+        public NamedSelection(string name, bool isSectional, IEnumerable<int> sections)
+        {
+            Name = name;
+            Sections = new TrackedArray<int>(sections);
+            SelectedFaces = new TrackedArray<int>();
+            SelectedVertices = new TrackedArray<int>();
+            SelectedVerticesWeights = new TrackedArray<byte>();
+            IsSectional = isSectional;
         }
 
         public string Name { get; }
