@@ -5,7 +5,7 @@ using BIS.Core.Streams;
 
 namespace BIS.Core.Math
 {
-    public class Vector3P
+    public class Vector3P : IEquatable<Vector3P>
     {
         private Vector3 xyz;
 
@@ -124,16 +124,9 @@ namespace BIS.Core.Math
 
         public override bool Equals(object obj)
         {
-            Vector3P p = obj as Vector3P;
-            if (p == null)
-            {
-                return false;
-            }
-
-            return base.Equals(obj) && Equals(p);
+            return Equals(obj as Vector3P);
         }
 
-        //ToDo:
         public override int GetHashCode()
         {
             return xyz.GetHashCode();
@@ -141,9 +134,25 @@ namespace BIS.Core.Math
 
         public bool Equals(Vector3P other)
         {
-            Func<float, float, bool> nearlyEqual = (f1, f2) => System.Math.Abs(f1 - f2) < 0.05;
+            if (other != null)
+            {
+                return xyz.Equals(other.xyz);
+            }
+            return false;
+        }
 
-            return ( nearlyEqual(X, other.X) && nearlyEqual(Y, other.Y) && nearlyEqual(Z, other.Z));
+        private static bool NearlyEquals(float f1, float f2)
+        {
+            return System.Math.Abs(f1 - f2) < 0.05;
+        }
+
+        public bool NearlyEquals(Vector3P other)
+        {
+            if (other != null)
+            {
+                return NearlyEquals(X, other.X) && NearlyEquals(Y, other.Y) && NearlyEquals(Z, other.Z);
+            }
+            return false;
         }
 
         public override string ToString()

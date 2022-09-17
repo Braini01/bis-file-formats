@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Braini01, GrueArbre</Authors>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <RepositoryUrl>https://github.com/Braini01/bis-file-formats</RepositoryUrl>
+    <TargetFrameworks>net6.0;net6.0-windows;net7.0;netstandard2.0</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>

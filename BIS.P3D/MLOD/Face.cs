@@ -1,5 +1,7 @@
 ﻿using BIS.Core.Streams;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace BIS.P3D.MLOD
 {
@@ -22,8 +24,10 @@ namespace BIS.P3D.MLOD
         public int VertexCount { get; private set; }
         public Vertex[] Vertices { get; private set; }
         public FaceFlags Flags { get; private set; }
-        public string Texture { get; private set; }
-        public string Material { get; private set; }
+        public string Texture { get; set; }
+        public string Material { get; set; }
+
+        public IEnumerable<Vertex> RealVertices => Vertices.Take(VertexCount);
 
         public Face(int nVerts, Vertex[] verts, FaceFlags flags, string texture, string material)
         {

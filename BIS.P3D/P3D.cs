@@ -1,62 +1,28 @@
 ﻿using BIS.Core.Math;
 using BIS.Core.Streams;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
 namespace BIS.P3D
-{
-    //public abstract class P3D_LOD
-    //{
-    //    public float Resolution { get; protected set; }
-
-    //    public string Name
-    //    { 
-    //        get { return Resolution.GetLODName(); }
-    //    }
-
-    //    public abstract Vector3P[] Points
-    //    {
-    //        get;
-    //    }
-
-    //    public abstract Vector3P[] NormalVectors
-    //    {
-    //        get;
-    //    }
-
-    //    public abstract string[] Textures
-    //    {
-    //        get;
-    //    }
-
-    //    public abstract string[] MaterialNames
-    //    {
-    //        get;
-    //    }
-    //}
-   
-    public static class P3D
+{  
+    public class P3D : IReadObject
     {
-        //public int Version { get; protected set; }
+        private MLOD.MLOD editable;
+        private ODOL.ODOL binarized;
 
-        //public static P3D GetInstance(string fileName)
-        //{
-        //    return GetInstance(File.OpenRead(fileName));
-        //}
+        public IModelInfo ModelInfo => 
+            binarized?.ModelInfo 
+            ?? editable.ModelInfo;
 
-        //public static P3D GetInstance(Stream stream)
-        //{
-        //    var binaryReader = new BinaryReaderEx(stream);
-        //    var sig = binaryReader.ReadAscii(4);
-        //    stream.Position -= 4;
-        //    if (sig == "ODOL")
-        //        return new ODOL.ODOL(stream);
-        //    if (sig == "MLOD")
-        //        return new MLOD.MLOD(stream);
-        //    else
-        //        throw new FormatException("Neither MLOD nor ODOL signature detected");
-        //}
+        public IEnumerable<ILevelOfDetail> LODs => 
+            binarized?.Lods.AsEnumerable<ILevelOfDetail>() 
+            ?? editable.Lods.AsEnumerable<ILevelOfDetail>();
+
+        public bool IsEditable =>  editable != null;
+
+        public int Version => binarized?.Version ?? editable.Version;
 
         public static bool IsODOL(string filePath)
         {
@@ -95,16 +61,28 @@ namespace BIS.P3D
             return result;
         }
 
-        //public abstract P3D_LOD[] LODs { get; }
+        public void Read(BinaryReaderEx input)
+        {
+            var signature = input.ReadAscii(4);
+            switch (signature)
+            {
+                case "ODOL":
+                    binarized = new ODOL.ODOL();
+                    binarized.ReadContent(input);
+                    editable = null;
+                    break;
+                case "MLOD":
+                    editable = new MLOD.MLOD();
+                    editable.ReadContent(input);
+                    binarized = null;
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unknown P3D format '{signature}'");
+            }
+        }
 
-        //public virtual P3D_LOD GetLOD(float resolution)
-        //{
-        //    return LODs.FirstOrDefault(lod => lod.Resolution == resolution);
-        //}
+        public ODOL.ODOL ODOL => binarized;
 
-        //public abstract float Mass
-        //{
-        //    get;
-        //}
+        public MLOD.MLOD MLOD => editable;
     }
 }

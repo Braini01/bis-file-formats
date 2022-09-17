@@ -25,6 +25,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Image2PAA", "Image2PAA\Imag
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BIS.PAA.Encoder", "..\BIS.PAA.Encoder\BIS.PAA.Encoder.csproj", "{E65A45D8-02A3-4186-9D0F-8806C5C2E1A6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "P3dUtil", "P3dUtil\P3dUtil.csproj", "{EC9E571D-466E-48C7-9BBF-6B6E3187F112}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -75,6 +77,10 @@ Global
 		{E65A45D8-02A3-4186-9D0F-8806C5C2E1A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E65A45D8-02A3-4186-9D0F-8806C5C2E1A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E65A45D8-02A3-4186-9D0F-8806C5C2E1A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC9E571D-466E-48C7-9BBF-6B6E3187F112}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC9E571D-466E-48C7-9BBF-6B6E3187F112}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC9E571D-466E-48C7-9BBF-6B6E3187F112}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC9E571D-466E-48C7-9BBF-6B6E3187F112}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

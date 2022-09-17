@@ -29,6 +29,8 @@ namespace BIS.WRP
 
         public IReadOnlyList<ushort> MaterialIndex => wrp.MaterialIndex;
 
+        public int ObjectsCount => wrp.ObjectsCount;
+
         public void Read(BinaryReaderEx input)
         {
             var signature = input.ReadAscii(4);

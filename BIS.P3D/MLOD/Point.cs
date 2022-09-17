@@ -64,8 +64,8 @@ namespace BIS.P3D.MLOD
     {
         public int PointIndex { get; private set; }
         public int NormalIndex { get; private set; }
-        public float U { get; private set; }
-        public float V { get; private set; }
+        public float U { get; set; }
+        public float V { get; set; }
 
         public Vertex(BinaryReaderEx input)
         {
