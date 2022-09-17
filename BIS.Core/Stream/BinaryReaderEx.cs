@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -70,6 +71,15 @@ namespace BIS.Core.Streams
             while ((ch = (char)ReadByte()) != 0)
                 str.Append(ch);
             return str.ToString();
+        }
+
+        public string ReadUTF8z()
+        {
+            var str = new List<byte>();
+            byte ch;
+            while ((ch = ReadByte()) != 0)
+                str.Add(ch);
+            return Encoding.UTF8.GetString(str.ToArray());
         }
 
         public TrackedArray<T> ReadTracked<T>(Func<BinaryReaderEx, T[]> read)

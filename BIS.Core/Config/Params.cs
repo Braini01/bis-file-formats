@@ -344,7 +344,7 @@ $@"{classHead}
             {
                 case ValueType.Expression: goto case ValueType.Generic;
                 case ValueType.Generic:
-                    Value = input.ReadAsciiz();
+                    Value = input.ReadUTF8z();
                     break;
                 case ValueType.Float:
                     Value = input.ReadSingle();
