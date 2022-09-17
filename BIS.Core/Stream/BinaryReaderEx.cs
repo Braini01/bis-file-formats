@@ -57,6 +57,18 @@ namespace BIS.Core.Streams
             var n = ReadUInt16();
             return ReadAscii(n);
         }
+        
+        public int ReadCompressedInteger() 
+        {
+            var value = 0;
+            for (var i = 0;; ++i)
+            {
+                var v = ReadByte();
+                value |= v & 0x7F << (7 * i);
+                if((v & 0x80) == 0) break;
+            }
+            return value;
+        }
 
         public string ReadAscii32()
         {

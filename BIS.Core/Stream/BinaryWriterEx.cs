@@ -194,6 +194,18 @@ namespace BIS.Core.Streams
             }
             
         }
+        
+        public void WriteCompressedInt(int data) {
+            do {
+                var current = data % 0x80;
+                data = (int) System.Math.Floor((decimal)data / 0x80);
+                if (data is not 0) current = current | 0x80; 
+                Write((byte) current);
+            } while (data > 0x7F);
+
+            if (data is not 0) Write((byte) data);
+        }
+
 
         public void WriteUInt24(uint length)
         {
